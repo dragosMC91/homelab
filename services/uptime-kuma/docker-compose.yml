@@ -1,0 +1,47 @@
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:2.2.0
+    container_name: uptime-kuma
+    restart: unless-stopped
+
+    ports:
+      - "${UPTIME_KUMA_PORT:-3001}:3001/tcp"
+
+    volumes:
+      - ./data:/app/data
+
+    environment:
+      - TZ=${TZ:-Europe/Bucharest}
+
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test: ["CMD", "/app/extra/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.50"
+
+    labels:
+      - "com.homelab.service=uptime-kuma"
+      - "com.homelab.description=Uptime Monitoring Dashboard"
+
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

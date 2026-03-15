@@ -1,0 +1,10 @@
+# Runtime data (logs, stats, cache)
+data/work/*
+data/conf/*
+
+# Keep directory structure
+!data/work/.gitkeep
+!data/conf/.gitkeep
+
+# Local environment
+.env

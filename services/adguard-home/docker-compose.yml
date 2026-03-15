@@ -1,0 +1,53 @@
+services:
+  adguard:
+    image: adguard/adguardhome:v0.107.72
+    container_name: adguardhome
+    restart: unless-stopped
+
+    ports:
+      # DNS
+      - "${HOST_DNS_PORT:-53}:53/tcp"
+      - "${HOST_DNS_PORT:-53}:53/udp"
+
+      # Web UI (set to 3000 during AdGuard initial setup wizard)
+      - "3000:3000/tcp"
+
+    volumes:
+      - ./data/work:/opt/adguardhome/work
+      - ./data/conf:/opt/adguardhome/conf
+
+    environment:
+      - TZ=${TZ:-Europe/Bucharest}
+
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.75"
+
+    labels:
+      - "com.homelab.service=adguard-home"
+      - "com.homelab.description=Network-wide Ad Blocker"
+
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

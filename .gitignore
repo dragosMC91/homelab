@@ -1,0 +1,16 @@
+.env
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+.docker/
+
+*.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

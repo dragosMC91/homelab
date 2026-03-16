@@ -1,0 +1,5 @@
+||connectivitycheck.gstatic.com^
+||captive.apple.com^
+||msftconnecttest.com^
+||apple.com^
+||icloud.com^

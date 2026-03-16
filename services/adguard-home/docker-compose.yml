@@ -9,8 +9,9 @@ services:
       - "${HOST_DNS_PORT:-53}:53/tcp"
       - "${HOST_DNS_PORT:-53}:53/udp"
 
-      # Web UI (set to 3000 during AdGuard initial setup wizard)
+      # Web UI — 3000 is used during initial setup, 80 is used after setup completes
       - "3000:3000/tcp"
+      - "8080:80/tcp"
 
     volumes:
       - ./data/work:/opt/adguardhome/work
@@ -23,7 +24,7 @@ services:
       - no-new-privileges:true
 
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3000"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:80"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -88,8 +88,16 @@ REAL_USER="${SUDO_USER:-$USER}"
 # ------------------------------------------------------------------
 
 log "Setting hostname to '$HOSTNAME'"
+# Update /etc/hosts FIRST — changing the hostname before this breaks sudo
+# because it tries to resolve the new hostname via /etc/hosts.
+if grep -q "127\.0\.1\.1" /etc/hosts; then
+    sed -i "s/127\.0\.1\.1.*/127.0.1.1\t$HOSTNAME/" /etc/hosts
+else
+    echo "127.0.1.1	$HOSTNAME" >> /etc/hosts
+fi
+echo "$HOSTNAME" > /etc/hostname
 hostnamectl set-hostname "$HOSTNAME"
-sed -i "s/127\.0\.1\.1.*/127.0.1.1\t$HOSTNAME/" /etc/hosts 2>/dev/null || true
+hostname "$HOSTNAME"
 echo "Hostname set to: $(hostname)"
 
 # ------------------------------------------------------------------
@@ -145,10 +153,10 @@ else
 fi
 
 # Lower swappiness so swap is only used under pressure
-sysctl vm.swappiness=10
 grep -q "vm.swappiness" /etc/sysctl.conf 2>/dev/null \
     && sed -i 's/vm.swappiness=.*/vm.swappiness=10/' /etc/sysctl.conf \
     || echo "vm.swappiness=10" >> /etc/sysctl.conf
+sysctl -p
 
 # ------------------------------------------------------------------
 # 5. Free port 53 for AdGuard Home
@@ -185,6 +193,93 @@ fi
 
 log "Running 'make setup' to create network and seed .env files"
 make -C "$REPO_DIR" setup
+
+# ------------------------------------------------------------------
+# 7. Verify setup
+# ------------------------------------------------------------------
+
+log "Running post-setup verification"
+
+VERIFY_PASS=0
+VERIFY_FAIL=0
+
+check() {
+    local description="$1"
+    shift
+    if "$@" &>/dev/null; then
+        echo "  [PASS] $description"
+        ((VERIFY_PASS++))
+    else
+        echo "  [FAIL] $description"
+        ((VERIFY_FAIL++))
+    fi
+}
+
+# Hostname
+check "Hostname is set to '$HOSTNAME'" \
+    test "$(hostname)" = "$HOSTNAME"
+
+check "Hostname in /etc/hosts" \
+    grep -q "$HOSTNAME" /etc/hosts
+
+# Docker
+check "Docker is installed" \
+    command -v docker
+
+check "Docker daemon is running" \
+    docker info
+
+check "Docker Compose plugin is installed" \
+    docker compose version
+
+check "User '$REAL_USER' is in docker group" \
+    bash -c "getent group docker | grep -q '\b${REAL_USER}\b'"
+
+# Swap
+check "Swap is active on /swapfile" \
+    bash -c "swapon --show | grep -q /swapfile"
+
+ACTUAL_SWAP_MB=$(swapon --show=SIZE --bytes --noheadings 2>/dev/null | awk '{sum+=$1} END{printf "%d", sum/1024/1024}')
+check "Swap size is >= ${SWAP_SIZE_MB}MB (actual: ${ACTUAL_SWAP_MB}MB)" \
+    test "${ACTUAL_SWAP_MB:-0}" -ge "$SWAP_SIZE_MB"
+
+check "vm.swappiness is 10" \
+    test "$(sysctl -n vm.swappiness)" -eq 10
+
+check "vm.swappiness persisted in /etc/sysctl.conf" \
+    grep -q "vm.swappiness=10" /etc/sysctl.conf
+
+check "Swap entry in /etc/fstab" \
+    grep -q "/swapfile" /etc/fstab
+
+# Port 53 / DNS
+check "Port 53 is not in use (free for AdGuard)" \
+    bash -c "! ss -tlnp | grep -q ':53 '"
+
+check "systemd-resolved is not running" \
+    bash -c "! systemctl is-active --quiet systemd-resolved 2>/dev/null"
+
+check "/etc/resolv.conf has a nameserver entry" \
+    grep -q "^nameserver" /etc/resolv.conf
+
+check "DNS resolution works" \
+    bash -c "getent hosts google.com >/dev/null 2>&1 || host google.com >/dev/null 2>&1"
+
+# Docker network
+check "Docker network 'homelab' exists" \
+    docker network inspect homelab
+
+# Summary
+echo ""
+echo "  ────────────────────────────────"
+echo "  Results: $VERIFY_PASS passed, $VERIFY_FAIL failed"
+echo "  ────────────────────────────────"
+
+if [[ $VERIFY_FAIL -gt 0 ]]; then
+    echo ""
+    echo "  Some checks failed. Review the [FAIL] items above."
+    echo "  You can re-run this script safely — all steps are idempotent."
+fi
 
 # ------------------------------------------------------------------
 # Done

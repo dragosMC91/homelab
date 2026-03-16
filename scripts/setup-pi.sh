@@ -88,6 +88,14 @@ REAL_USER="${SUDO_USER:-$USER}"
 # ------------------------------------------------------------------
 
 log "Setting hostname to '$HOSTNAME'"
+# Raspberry Pi OS images flashed with Raspberry Pi Imager use cloud-init to
+# set the hostname configured during flashing. cloud-init runs on every boot
+# and will override manual hostname changes unless we tell it to stop.
+if [[ -d /etc/cloud/cloud.cfg.d ]]; then
+    echo "preserve_hostname: true" > /etc/cloud/cloud.cfg.d/99-homelab-hostname.cfg
+    echo "cloud-init hostname preservation enabled."
+fi
+
 # Update /etc/hosts FIRST — changing the hostname before this breaks sudo
 # because it tries to resolve the new hostname via /etc/hosts.
 if grep -q "127\.0\.1\.1" /etc/hosts; then
@@ -221,6 +229,9 @@ check "Hostname is set to '$HOSTNAME'" \
 
 check "Hostname in /etc/hosts" \
     grep -q "$HOSTNAME" /etc/hosts
+
+check "cloud-init hostname preservation is set" \
+    bash -c "[[ ! -d /etc/cloud/cloud.cfg.d ]] || grep -q 'preserve_hostname: true' /etc/cloud/cloud.cfg.d/99-homelab-hostname.cfg 2>/dev/null"
 
 # Docker
 check "Docker is installed" \

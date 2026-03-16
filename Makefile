@@ -17,7 +17,7 @@ COMPOSE = docker compose
 SERVICES_DIR = services
 
 # Auto-discover services (each subdirectory under services/)
-SERVICES := $(notdir $(wildcard $(SERVICES_DIR)/*/))
+SERVICES := $(notdir $(patsubst %/,%,$(wildcard $(SERVICES_DIR)/*/)))
 
 .PHONY: help setup network check-env-files up down restart pull status clean $(foreach s,$(SERVICES),up-$(s) down-$(s) restart-$(s) logs-$(s) pull-$(s))
 

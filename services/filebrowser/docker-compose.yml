@@ -1,0 +1,49 @@
+services:
+  filebrowser:
+    image: filebrowser/filebrowser:v2-s6
+    container_name: filebrowser
+    restart: unless-stopped
+
+    ports:
+      - "${FILEBROWSER_PORT:-8082}:80"
+
+    volumes:
+      - /mnt/nas-hdd:/srv/nas-hdd
+      - /mnt/nas-ssd:/srv/nas-ssd
+      - ./data:/data
+      - ./settings.json:/.filebrowser.json:ro
+
+    environment:
+      - TZ=${TZ:-Europe/Bucharest}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256m
+
+    labels:
+      - "com.homelab.service=filebrowser"
+      - "com.homelab.description=Web-based File Manager"
+
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

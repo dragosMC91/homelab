@@ -42,6 +42,38 @@ Each service is fully self-contained in its own directory with its own compose f
 
 Tailscale runs on every node for secure remote access. AdGuard Home is configured as the Tailscale DNS server so all remote devices (phone, laptop) get network-wide ad-blocking.
 
+## Tailscale Auth Key Setup
+
+Tailscale requires an **auth key** (`TS_AUTHKEY`) so each node can join your tailnet without interactive browser login. This is the only secret you need to configure before deploying.
+
+### Generate a key
+
+1. Go to [Tailscale Admin > Settings > Keys](https://login.tailscale.com/admin/settings/keys)
+2. Click **Generate auth key...**
+3. Configure these settings:
+   - **Reusable** — enable this so you can use the same key on all nodes instead of generating one per device
+   - **Ephemeral** — enable this so nodes are automatically removed from your tailnet when they go offline for 30+ minutes (useful for containers that get recreated on redeploy)
+   - **Expiry** — set to the maximum (90 days)
+4. Copy the key (starts with `tskey-auth-`)
+
+### Use the key
+
+Set `TS_AUTHKEY` in each node's `services/tailscale/.env`:
+
+```bash
+# Same key works on all nodes (reusable)
+TS_AUTHKEY=tskey-auth-kXXXXXXXXXXXXXXXXXX
+```
+
+You can use the **same reusable key** on every node — no need to generate a separate key per device.
+
+### Key lifecycle
+
+- The auth key is only used on **first join** (or if `services/tailscale/data/` is wiped). After that, the node authenticates via its stored state in `data/`.
+- Running nodes are **not affected** when a key expires. They keep their connection via the persisted state.
+- When the key expires after 90 days, generate a new one and update the `.env` files. You only need the new key if you're adding a new node or recreating one from scratch.
+- If you delete the `data/` directory, the node will need to re-authenticate with a valid key.
+
 ## Prerequisites
 
 ### macOS
@@ -200,6 +232,11 @@ Log out and back in after setup so the `docker` group takes effect.
 ### 4. Set a static IP
 
 Assign a static IP to the Pi via your router's DHCP reservation (bind the Pi's MAC address to a fixed IP). This is essential since this Pi will serve DNS for your entire network.
+
+Use ethernet connection and disable WiFi
+```bash
+echo "dtoverlay=disable-wifi" | sudo tee -a /boot/firmware/config.txt
+```
 
 ### 5. Configure and start
 

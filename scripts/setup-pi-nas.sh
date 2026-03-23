@@ -137,8 +137,8 @@ set -euo pipefail
 #
 # 9. Set up LVM on the HDD for per-user storage
 #
-#    LVM lets you carve the 8TB HDD into logical volumes — one per
-#    family member plus a shared volume. You can resize them later
+#    LVM is used to carve the HDDs into logical volumes — one per
+#    family member plus a shared volume. They can be resized later
 #    without reformatting.
 #
 #    Install LVM tools:
@@ -337,6 +337,11 @@ apt-get install -y samba samba-common-bin
 
 SAMBA_CONF="/etc/samba/smb.conf"
 
+# Create the nasusers group (used for shared folder access and FileBrowser)
+if ! getent group nasusers &>/dev/null; then
+    groupadd nasusers
+fi
+
 # Create NAS users and their private Samba shares
 for nas_user in "${NAS_USERS[@]}"; do
     # Create Linux user (no SSH login, no home directory)
@@ -346,12 +351,16 @@ for nas_user in "${NAS_USERS[@]}"; do
     else
         echo "Linux user '$nas_user' already exists -- skipping."
     fi
+    usermod -aG nasusers "$nas_user"
 
-    # Set ownership on the user's LVM mount point
+    # Set ownership on the user's LVM mount point.
+    # Group is set to 'nasusers' with 770 so FileBrowser (running as the
+    # nasusers group) can access the directory without running as root.
+    # Samba 'valid users' still restricts SMB access to only the owner.
     user_dir="/mnt/nas-hdd/$nas_user"
     if mountpoint -q "$user_dir"; then
-        chown "$nas_user":"$nas_user" "$user_dir"
-        chmod 700 "$user_dir"
+        chown "$nas_user":nasusers "$user_dir"
+        chmod 770 "$user_dir"
         echo "Set ownership on $user_dir"
     else
         echo "Warning: $user_dir is not mounted -- skipping ownership setup."
@@ -365,22 +374,15 @@ for nas_user in "${NAS_USERS[@]}"; do
    path = /mnt/nas-hdd/$nas_user
    browseable = yes
    read only = no
-   create mask = 0700
-   directory mask = 0700
+   create mask = 0770
+   directory mask = 0770
+   force group = nasusers
    valid users = $nas_user
 EOF
         echo "Samba share [$nas_user] configured (private)."
     else
         echo "Samba share [$nas_user] already configured -- skipping."
     fi
-done
-
-# Create a group for shared access and add all NAS users to it
-if ! getent group nasusers &>/dev/null; then
-    groupadd nasusers
-fi
-for nas_user in "${NAS_USERS[@]}"; do
-    usermod -aG nasusers "$nas_user"
 done
 
 # Set ownership on the shared LVM mount point
@@ -554,7 +556,20 @@ echo "       make up-tailscale"
 echo "       make up-filebrowser"
 echo "  6. Access FileBrowser at: http://$HOSTNAME.local:8082"
 echo "     (default login: admin / admin — change on first login)"
-echo "  7. Connect to NAS shares via Samba from other machines:"
+echo "  7. Connect to NAS shares via Samba:"
+echo ""
+echo "     macOS:"
+echo "       Finder -> Go -> Connect to Server (Cmd+K)"
+echo "       Enter: smb://$HOSTNAME.local/<username>"
+echo "       Log in with the Samba username and password"
+echo "       Check 'Remember this password in my keychain' to save credentials"
+echo ""
+echo "     iOS (Files app):"
+echo "       Open Files -> tap '...' (top-right) -> Connect to Server"
+echo "       Enter: smb://$HOSTNAME.local/<username>"
+echo "       Log in with the Samba username and password"
+echo ""
+echo "     Available shares:"
 for nas_user in "${NAS_USERS[@]}"; do
     echo "       smb://$HOSTNAME.local/$nas_user  (private)"
 done

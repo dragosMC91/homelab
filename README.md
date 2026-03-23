@@ -233,9 +233,10 @@ Log out and back in after setup so the `docker` group takes effect.
 
 Assign a static IP to the Pi via your router's DHCP reservation (bind the Pi's MAC address to a fixed IP). This is essential since this Pi will serve DNS for your entire network.
 
-Use ethernet connection and disable WiFi
+All Pis should use Ethernet and disable WiFi to avoid dual-interface issues (the router may show stale DHCP entries from the WiFi interface):
 ```bash
 echo "dtoverlay=disable-wifi" | sudo tee -a /boot/firmware/config.txt
+sudo reboot
 ```
 
 ### 5. Configure and start

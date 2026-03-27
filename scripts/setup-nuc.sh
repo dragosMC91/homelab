@@ -114,7 +114,48 @@ else
 fi
 
 # ------------------------------------------------------------------
-# 4. Install Docker
+# 4. Install Zsh + Oh My Zsh
+# ------------------------------------------------------------------
+
+log "Installing Zsh"
+apt-get install -y zsh
+
+if [[ -d "/home/$REAL_USER/.oh-my-zsh" ]]; then
+    echo "Oh My Zsh is already installed for $REAL_USER -- skipping."
+else
+    log "Installing Oh My Zsh for '$REAL_USER'"
+    sudo -u "$REAL_USER" sh -c \
+        'RUNZSH=no CHSH=no sh -s -- --unattended' \
+        < <(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)
+fi
+
+ZSH_CUSTOM="/home/$REAL_USER/.oh-my-zsh/custom"
+
+# zsh-autosuggestions (colorize is built into Oh My Zsh)
+if [[ -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]]; then
+    echo "zsh-autosuggestions plugin already installed -- skipping."
+else
+    log "Installing zsh-autosuggestions plugin"
+    sudo -u "$REAL_USER" git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+fi
+
+# Enable plugins in .zshrc
+ZSHRC="/home/$REAL_USER/.zshrc"
+if [[ -f "$ZSHRC" ]] && grep -q "^plugins=" "$ZSHRC"; then
+    sed -i 's/^plugins=.*/plugins=(git colorize zsh-autosuggestions)/' "$ZSHRC"
+    echo "Updated plugins in .zshrc"
+fi
+
+# Change default shell to zsh
+if [[ "$(getent passwd "$REAL_USER" | cut -d: -f7)" != "$(command -v zsh)" ]]; then
+    chsh -s "$(command -v zsh)" "$REAL_USER"
+    echo "Default shell changed to zsh for $REAL_USER"
+else
+    echo "Default shell is already zsh for $REAL_USER"
+fi
+
+# ------------------------------------------------------------------
+# 5. Install Docker
 # ------------------------------------------------------------------
 
 if command -v docker &>/dev/null; then
@@ -135,7 +176,7 @@ else
 fi
 
 # ------------------------------------------------------------------
-# 5. Create Docker network and seed .env files
+# 6. Create Docker network and seed .env files
 # ------------------------------------------------------------------
 
 log "Running 'make setup' to create network and seed .env files"

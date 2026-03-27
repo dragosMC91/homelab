@@ -308,7 +308,48 @@ apt-get update -y
 apt-get upgrade -y
 
 # ------------------------------------------------------------------
-# 3. Install Docker
+# 3. Install Zsh + Oh My Zsh
+# ------------------------------------------------------------------
+
+log "Installing Zsh"
+apt-get install -y zsh
+
+if [[ -d "/home/$REAL_USER/.oh-my-zsh" ]]; then
+    echo "Oh My Zsh is already installed for $REAL_USER -- skipping."
+else
+    log "Installing Oh My Zsh for '$REAL_USER'"
+    sudo -u "$REAL_USER" sh -c \
+        'RUNZSH=no CHSH=no sh -s -- --unattended' \
+        < <(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)
+fi
+
+ZSH_CUSTOM="/home/$REAL_USER/.oh-my-zsh/custom"
+
+# zsh-autosuggestions (colorize is built into Oh My Zsh)
+if [[ -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]]; then
+    echo "zsh-autosuggestions plugin already installed -- skipping."
+else
+    log "Installing zsh-autosuggestions plugin"
+    sudo -u "$REAL_USER" git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+fi
+
+# Enable plugins in .zshrc
+ZSHRC="/home/$REAL_USER/.zshrc"
+if [[ -f "$ZSHRC" ]] && grep -q "^plugins=" "$ZSHRC"; then
+    sed -i 's/^plugins=.*/plugins=(git colorize zsh-autosuggestions)/' "$ZSHRC"
+    echo "Updated plugins in .zshrc"
+fi
+
+# Change default shell to zsh
+if [[ "$(getent passwd "$REAL_USER" | cut -d: -f7)" != "$(command -v zsh)" ]]; then
+    chsh -s "$(command -v zsh)" "$REAL_USER"
+    echo "Default shell changed to zsh for $REAL_USER"
+else
+    echo "Default shell is already zsh for $REAL_USER"
+fi
+
+# ------------------------------------------------------------------
+# 4. Install Docker
 # ------------------------------------------------------------------
 
 if command -v docker &>/dev/null; then
@@ -329,7 +370,7 @@ else
 fi
 
 # ------------------------------------------------------------------
-# 4. Install and configure Samba
+# 5. Install and configure Samba
 # ------------------------------------------------------------------
 
 log "Installing Samba"
@@ -436,14 +477,14 @@ done
 echo ""
 
 # ------------------------------------------------------------------
-# 5. Create Docker network and seed .env files
+# 6. Create Docker network and seed .env files
 # ------------------------------------------------------------------
 
 log "Running 'make setup' to create network and seed .env files"
 make -C "$REPO_DIR" setup
 
 # ------------------------------------------------------------------
-# 6. Verify setup
+# 7. Verify setup
 # ------------------------------------------------------------------
 
 log "Running post-setup verification"
@@ -476,6 +517,19 @@ check "cloud-init hostname preservation is set" \
 # OS root on SSD
 check "OS root is on SSD (not SD card)" \
     bash -c "[[ \$(findmnt -n -o SOURCE /) != /dev/mmcblk* ]]"
+
+# Zsh
+check "Zsh is installed" \
+    command -v zsh
+
+check "Oh My Zsh is installed for $REAL_USER" \
+    test -d "/home/$REAL_USER/.oh-my-zsh"
+
+check "zsh-autosuggestions plugin is installed" \
+    test -d "/home/$REAL_USER/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+
+check "Default shell for $REAL_USER is zsh" \
+    bash -c "[[ \$(getent passwd '$REAL_USER' | cut -d: -f7) == */zsh ]]"
 
 # Docker
 check "Docker is installed" \

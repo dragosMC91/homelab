@@ -8,6 +8,15 @@
 
 *.log
 
+# Secrets & certificates
+*.pem
+*.key
+*.crt
+*.cert
+*.p12
+*.pfx
+secrets/
+
 # Editor
 .vscode/
 .idea/

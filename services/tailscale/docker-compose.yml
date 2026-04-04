@@ -10,6 +10,9 @@ services:
       - NET_ADMIN
       - NET_RAW
 
+    security_opt:
+      - no-new-privileges:true
+
     volumes:
       - ./data:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun

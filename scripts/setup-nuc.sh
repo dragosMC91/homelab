@@ -84,8 +84,23 @@ REAL_USER="${SUDO_USER:-$USER}"
 # ------------------------------------------------------------------
 
 log "Setting hostname to '$HOSTNAME'"
+# Ubuntu Server may use cloud-init to set the hostname on boot.
+# Tell it to stop overriding manual hostname changes.
+if [[ -d /etc/cloud/cloud.cfg.d ]]; then
+    echo "preserve_hostname: true" > /etc/cloud/cloud.cfg.d/99-homelab-hostname.cfg
+    echo "cloud-init hostname preservation enabled."
+fi
+
+# Update /etc/hosts FIRST — changing the hostname before this breaks sudo
+# because it tries to resolve the new hostname via /etc/hosts.
+if grep -q "127\.0\.1\.1" /etc/hosts; then
+    sed -i "s/127\.0\.1\.1.*/127.0.1.1\t$HOSTNAME/" /etc/hosts
+else
+    echo "127.0.1.1	$HOSTNAME" >> /etc/hosts
+fi
+echo "$HOSTNAME" > /etc/hostname
 hostnamectl set-hostname "$HOSTNAME"
-sed -i "s/127\.0\.1\.1.*/127.0.1.1\t$HOSTNAME/" /etc/hosts 2>/dev/null || true
+hostname "$HOSTNAME"
 echo "Hostname set to: $(hostname)"
 
 # ------------------------------------------------------------------
@@ -181,6 +196,86 @@ fi
 
 log "Running 'make setup' to create network and seed .env files"
 make -C "$REPO_DIR" setup
+
+# ------------------------------------------------------------------
+# 7. Verify setup
+# ------------------------------------------------------------------
+
+log "Running post-setup verification"
+
+VERIFY_PASS=0
+VERIFY_FAIL=0
+
+check() {
+    local description="$1"
+    shift
+    if "$@" &>/dev/null; then
+        echo "  [PASS] $description"
+        ((VERIFY_PASS++))
+    else
+        echo "  [FAIL] $description"
+        ((VERIFY_FAIL++))
+    fi
+}
+
+# Hostname
+check "Hostname is set to '$HOSTNAME'" \
+    test "$(hostname)" = "$HOSTNAME"
+
+check "Hostname in /etc/hosts" \
+    grep -q "$HOSTNAME" /etc/hosts
+
+check "cloud-init hostname preservation is set" \
+    bash -c "[[ ! -d /etc/cloud/cloud.cfg.d ]] || grep -q 'preserve_hostname: true' /etc/cloud/cloud.cfg.d/99-homelab-hostname.cfg 2>/dev/null"
+
+# Zsh
+check "Zsh is installed" \
+    command -v zsh
+
+check "Oh My Zsh is installed for $REAL_USER" \
+    test -d "/home/$REAL_USER/.oh-my-zsh"
+
+check "zsh-autosuggestions plugin is installed" \
+    test -d "/home/$REAL_USER/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+
+check "Default shell for $REAL_USER is zsh" \
+    bash -c "[[ \$(getent passwd '$REAL_USER' | cut -d: -f7) == */zsh ]]"
+
+# Docker
+check "Docker is installed" \
+    command -v docker
+
+check "Docker daemon is running" \
+    docker info
+
+check "Docker Compose plugin is installed" \
+    docker compose version
+
+check "User '$REAL_USER' is in docker group" \
+    bash -c "getent group docker | grep -q '\b${REAL_USER}\b'"
+
+# VA-API / Hardware transcoding
+check "Intel VA-API driver is installed" \
+    command -v vainfo
+
+check "GPU render node /dev/dri/renderD128 exists" \
+    test -e /dev/dri/renderD128
+
+# Docker network
+check "Docker network 'homelab' exists" \
+    docker network inspect homelab
+
+# Summary
+echo ""
+echo "  ────────────────────────────────"
+echo "  Results: $VERIFY_PASS passed, $VERIFY_FAIL failed"
+echo "  ────────────────────────────────"
+
+if [[ $VERIFY_FAIL -gt 0 ]]; then
+    echo ""
+    echo "  Some checks failed. Review the [FAIL] items above."
+    echo "  You can re-run this script safely — all steps are idempotent."
+fi
 
 # ------------------------------------------------------------------
 # Done

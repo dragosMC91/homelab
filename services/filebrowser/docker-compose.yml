@@ -7,6 +7,9 @@ services:
     ports:
       - "${FILEBROWSER_PORT:-8082}:80"
 
+    security_opt:
+      - no-new-privileges:true
+
     volumes:
       - /mnt/nas-hdd:/srv/nas-hdd
       - /mnt/nas-ssd:/srv/nas-ssd

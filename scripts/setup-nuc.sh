@@ -212,10 +212,10 @@ check() {
     shift
     if "$@" &>/dev/null; then
         echo "  [PASS] $description"
-        ((VERIFY_PASS++))
+        VERIFY_PASS=$((VERIFY_PASS + 1))
     else
         echo "  [FAIL] $description"
-        ((VERIFY_FAIL++))
+        VERIFY_FAIL=$((VERIFY_FAIL + 1))
     fi
 }
 

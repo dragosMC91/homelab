@@ -115,6 +115,7 @@ echo "Hostname set to: $(hostname)"
 log "Updating system packages"
 apt-get update -y
 apt-get upgrade -y
+apt-get install -y make
 
 # ------------------------------------------------------------------
 # 3. Install Zsh + Oh My Zsh

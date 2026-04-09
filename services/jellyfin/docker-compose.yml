@@ -25,7 +25,7 @@ services:
     # Intel Quick Sync (VA-API) hardware transcoding
     devices:
       - /dev/dri/renderD128:/dev/dri/renderD128
-      - /dev/dri/card0:/dev/dri/card0
+      - /dev/dri/card1:/dev/dri/card1
 
     group_add:
       - "render"

@@ -28,7 +28,7 @@ services:
       - /dev/dri/card1:/dev/dri/card1
 
     group_add:
-      - "render"
+      - "993"    # render
       - "video"
 
     security_opt:

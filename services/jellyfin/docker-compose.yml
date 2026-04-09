@@ -1,0 +1,65 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:10.10.7
+    container_name: jellyfin
+    restart: unless-stopped
+    user: "1000:1000"
+
+    ports:
+      - "${JELLYFIN_PORT:-8096}:8096"
+      # Jellyfin client auto-discovery on LAN
+      - "7359:7359/udp"
+
+    volumes:
+      - ./data/config:/config
+      - ./data/cache:/cache
+      # NAS media library (NFS-mounted on host at /mnt/nas-media)
+      - /mnt/nas-media/movies:/media/movies:ro
+      - /mnt/nas-media/tv-shows:/media/tv-shows:ro
+      - /mnt/nas-media/music:/media/music:ro
+
+    environment:
+      - TZ=${TZ:-Europe/Bucharest}
+      - JELLYFIN_PublishedServerUrl=${JELLYFIN_PUBLISHED_URL:-http://192.168.55.111:8096}
+
+    # Intel Quick Sync (VA-API) hardware transcoding
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+      - /dev/dri/card0:/dev/dri/card0
+
+    group_add:
+      - "render"
+      - "video"
+
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8096/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+          cpus: "4.0"
+
+    labels:
+      - "com.homelab.service=jellyfin"
+      - "com.homelab.description=Media Streaming Server"
+
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

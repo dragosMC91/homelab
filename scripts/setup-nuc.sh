@@ -119,14 +119,17 @@ apt-get install -y make
 log "Installing Intel microcode and VA-API drivers"
 apt-get install -y intel-microcode intel-media-va-driver-non-free vainfo
 
+log "Adding '$REAL_USER' to the render group (GPU access for VA-API)"
+usermod -aG render "$REAL_USER"
+
 if [[ -e /dev/dri/renderD128 ]]; then
     echo "GPU render node /dev/dri/renderD128 is present."
     echo "VA-API profiles (run 'vainfo' after reboot to verify full list):"
-    vainfo 2>&1 | grep -E "VAProfile|vainfo" || true
+    vainfo --display drm --device /dev/dri/renderD128 2>&1 | grep -E "VAProfile|vainfo" || true
 else
     echo "Warning: /dev/dri/renderD128 not found."
     echo "A reboot may be required for the Intel GPU driver to load."
-    echo "After reboot, verify with: ls /dev/dri && vainfo"
+    echo "After reboot, verify with: ls /dev/dri && vainfo --display drm --device /dev/dri/renderD128"
 fi
 
 # ------------------------------------------------------------------
@@ -262,6 +265,9 @@ check "Intel VA-API driver is installed" \
 check "GPU render node /dev/dri/renderD128 exists" \
     test -e /dev/dri/renderD128
 
+check "User '$REAL_USER' is in render group" \
+    bash -c "getent group render | grep -q '\b${REAL_USER}\b'"
+
 # Docker network
 check "Docker network 'homelab' exists" \
     docker network inspect homelab
@@ -284,9 +290,9 @@ fi
 
 log "Setup complete for '$HOSTNAME'"
 echo "Next steps:"
-echo "  1. Log out and back in (so docker group takes effect), or run: newgrp docker"
+echo "  1. Log out and back in (so docker + render groups take effect), or run: newgrp docker"
 echo "  2. Set a static IP for this NUC via your router's DHCP reservation"
-echo "  3. Verify VA-API:  vainfo"
+echo "  3. Verify VA-API:  vainfo --display drm --device /dev/dri/renderD128"
 echo "  4. Review .env files in services/ and adjust as needed"
 echo "  5. Start services:"
 echo "       cd $REPO_DIR"

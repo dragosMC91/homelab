@@ -72,7 +72,17 @@ ls /mnt/nas-media/
 # Should show: movies  tv-shows  music
 ```
 
-## Step 4 — Deploy Jellyfin
+## Step 4 — Prepare Host Permissions
+
+Before starting the container, ensure the data directories are owned by the UID/GID the container runs as (1000:1000):
+
+```bash
+sudo chown -R 1000:1000 services/jellyfin/data
+```
+
+Without this, Jellyfin will crash on startup with `Access to the path '/config/log' is denied`.
+
+## Step 5 — Deploy Jellyfin
 
 On the NUC:
 
@@ -83,3 +93,27 @@ make up-jellyfin
 ```
 
 Open <http://192.168.55.111:8096> to run the Jellyfin setup wizard. In the wizard, enable **VA-API hardware transcoding** under Playback settings (device: `/dev/dri/renderD128`).
+
+## Troubleshooting
+
+### GPU device not found (`/dev/dri/card0: no such file or directory`)
+
+The Intel GPU card device name varies by system. Check what's available:
+
+```bash
+ls -la /dev/dri/
+```
+
+Update the `devices` section in `docker-compose.yml` to match (e.g., `card1` instead of `card0`). The `renderD128` device is the one actually used for VA-API transcoding; the `card*` device provides additional GPU access.
+
+### `Unable to find group render`
+
+Docker resolves group names from inside the container. If the container image doesn't define a `render` group, the lookup fails. Fix by using the numeric GID instead:
+
+```bash
+# Find the host GID for render
+getent group render
+# e.g. render:x:993:dragosnuc
+```
+
+Then in `docker-compose.yml`, use `"993"` instead of `"render"` in `group_add`.

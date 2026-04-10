@@ -229,7 +229,32 @@ This sets the hostname, configures 2GB swap, installs Docker, frees port 53 for 
 
 Log out and back in after setup so the `docker` group takes effect.
 
-### 4. Set a static IP
+### 4. Enable cgroup memory limits
+
+Raspberry Pi OS does not enable cgroup memory accounting by default. Without this, Docker cannot enforce container memory limits (`mem_limit` / `deploy.resources.limits.memory`) and will log warnings on `docker compose up`.
+
+Append these parameters to the **existing single line** in `/boot/firmware/cmdline.txt`:
+
+```
+cgroup_enable=memory cgroup_memory=1
+```
+
+Then reboot:
+
+```bash
+sudo reboot
+```
+
+Verify after reboot:
+
+```bash
+docker info | grep -i cgroup
+# Should show: Cgroup Version: 2 (or 1) without warnings
+```
+
+> **Note:** This applies to all Raspberry Pi nodes (pi-infra, pi-nas). Without it, containers still run but are not memory-capped — risky on low-RAM Pis.
+
+### 5. Set a static IP
 
 Assign a static IP to the Pi via your router's DHCP reservation (bind the Pi's MAC address to a fixed IP). This is essential since this Pi will serve DNS for your entire network.
 
@@ -239,7 +264,7 @@ echo "dtoverlay=disable-wifi" | sudo tee -a /boot/firmware/config.txt
 sudo reboot
 ```
 
-### 5. Configure and start
+### 6. Configure and start
 
 ```bash
 # Set Tailscale auth key and hostname
@@ -252,15 +277,15 @@ make up-tailscale
 make up-adguard-home
 ```
 
-### 6. Configure AdGuard Home
+### 7. Configure AdGuard Home
 
 Open `http://pi-infra.local:3000` in your browser and complete the setup wizard.
 
-### 7. Point your network to AdGuard
+### 8. Point your network to AdGuard
 
 In your router's DHCP settings, set the Pi's static IP as the primary DNS server. All devices on the network will now use AdGuard Home for DNS.
 
-### 8. Configure Tailscale DNS (remote ad-blocking)
+### 9. Configure Tailscale DNS (remote ad-blocking)
 
 In the [Tailscale admin console](https://login.tailscale.com/admin/dns):
 1. Add a **Global Nameserver** — enter the Pi's Tailscale IP (find it with `tailscale ip -4` on the Pi)

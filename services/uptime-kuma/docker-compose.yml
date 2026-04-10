@@ -32,7 +32,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512m
+          memory: 256m
           cpus: "0.50"
 
     labels:

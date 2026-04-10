@@ -94,6 +94,39 @@ make up-jellyfin
 
 Open <http://192.168.55.111:8096> to run the Jellyfin setup wizard. In the wizard, enable **VA-API hardware transcoding** under Playback settings (device: `/dev/dri/renderD128`).
 
+## Verifying Hardware Transcoding (VA-API)
+
+Direct Play (no transcoding) is the default when your client can handle the source file natively — this is ideal and uses zero CPU/GPU. To confirm VA-API hardware transcoding actually works when needed, you have to force Jellyfin to transcode.
+
+### Force a transcode
+
+In the browser player, click the **gear icon** (bottom-right of player controls) > **Quality** > set to **1.5 Mbps** or lower. This forces Jellyfin to re-encode the video since the source bitrate exceeds the limit. Set it back to **Auto/Max** when done testing.
+
+### Check if VA-API is active
+
+While a forced transcode is running:
+
+1. **Jellyfin Dashboard** (`/web/#/dashboard`) — click the active stream's **info (i) button**. It should show **Transcode** with a reason like "The video's bitrate exceeds the limit". High framerate (100+ fps) indicates hardware encoding.
+
+2. **From the NUC host** — verify the ffmpeg process uses VA-API:
+
+```bash
+docker top jellyfin | grep ffmpeg
+```
+
+Look for `-hwaccel vaapi` and a VA-API encoder like `hevc_vaapi` or `h264_vaapi` in the command. If you see these, hardware transcoding is working.
+
+3. **Compare power/CPU usage**:
+   - Direct Play: minimal CPU, lowest power draw
+   - Hardware transcode (VA-API): slight CPU increase (~5W), high transcode fps (100+)
+   - Software transcode (no VA-API): high CPU usage, significant power increase (~20W+), low fps (20-40)
+
+### If VA-API is not being used
+
+- Verify the GPU device is visible inside the container: `docker exec jellyfin ls -la /dev/dri/` — should show `renderD128` and `card*`
+- Check Jellyfin settings: Dashboard > Playback > Transcoding — **Hardware acceleration** must be set to **Video Acceleration API (VA-API)** with device `/dev/dri/renderD128`, all hardware decoding boxes checked, and hardware encoding enabled
+- Verify the jellyfin user has GPU access: `docker exec jellyfin id` — should include group `993` (render) and `44` (video)
+
 ## Troubleshooting
 
 ### GPU device not found (`/dev/dri/card0: no such file or directory`)

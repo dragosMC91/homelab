@@ -181,6 +181,48 @@ services:
     networks:
       - homelab
 
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    restart: unless-stopped
+
+    ports:
+      - "${JELLYSEERR_PORT:-5055}:5055"
+
+    volumes:
+      - ./data/jellyseerr:/app/config
+
+    environment:
+      - TZ=${TZ:-Europe/Bucharest}
+
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:5055"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+    labels:
+      - "com.homelab.service=jellyseerr"
+      - "com.homelab.description=Media Request Manager"
+
+    networks:
+      - homelab
+
 networks:
   homelab:
     external: true

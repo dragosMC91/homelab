@@ -14,7 +14,7 @@ services:
       - /mnt/nas-hdd:/srv/nas-hdd
       - /mnt/nas-ssd:/srv/nas-ssd
       - ./data:/database
-      - ./settings.json:/config/settings.json:ro
+      - ./settings.json:/config/settings.json
 
     environment:
       - TZ=${TZ:-Europe/Bucharest}

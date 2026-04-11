@@ -13,8 +13,8 @@ services:
     volumes:
       - /mnt/nas-hdd:/srv/nas-hdd
       - /mnt/nas-ssd:/srv/nas-ssd
-      - ./data:/data
-      - ./settings.json:/.filebrowser.json:ro
+      - ./data:/database
+      - ./settings.json:/config/settings.json:ro
 
     environment:
       - TZ=${TZ:-Europe/Bucharest}

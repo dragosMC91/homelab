@@ -1,5 +1,5 @@
 {
   "port": 80,
-  "database": "/data/database.db",
+  "database": "/database/filebrowser.db",
   "root": "/srv"
 }

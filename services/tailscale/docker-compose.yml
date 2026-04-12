@@ -40,8 +40,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.25"
-          memory: 128m
+          cpus: "1"
+          memory: 256m
 
     labels:
       - "com.homelab.service=tailscale"

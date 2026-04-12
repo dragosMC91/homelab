@@ -47,6 +47,12 @@ make status             # Show running containers
 | Intel NUC | `nuc` | Jellyfin, Tailscale |
 | RPi 5 | `dragospi5` | NAS (Samba/NFS), Filebrowser, Tailscale, *arr stack |
 
+## Coding Guidelines
+
+1. **Think first** — State assumptions explicitly. If ambiguous, present interpretations and ask — don't pick silently. Push back if a simpler approach exists.
+2. **Surgical edits** — Only change what the task requires. Match existing style. Remove only orphans YOUR changes created. Mention (don't delete) unrelated dead code. Litmus test: every changed line traces to the request.
+3. **Goal-driven** — Transform tasks into verifiable goals ("fix bug" → "write reproducing test, then make it pass"). For multi-step work, state a brief plan with a verify check per step.
+
 ## Subagent Strategy
 - Use Explore subagent for broad codebase searches and dependency mapping
 - Use general-purpose subagent for multi-step research

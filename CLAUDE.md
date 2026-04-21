@@ -34,9 +34,9 @@ make status             # Show running containers
 | Intel NUC 8 Pro | `nuc` | `static ip 3` | i3-8145U, 16GB RAM, 512GB SSD, VA-API transcoding |
 | Raspberry Pi 5 | `dragospi5` | `static ip 2` | 4GB RAM, Penta SATA HAT, 8TB HDD + 1TB SSD, SD boot |
 | Raspberry Pi 3B+ | `pi-infra` | `static ip 1` | 1GB RAM |
-| Raspberry Pi 3B+ | — | — | 1GB RAM (backup) |
-| Mac Mini 2018 | — | — | i5, 8GB RAM (future/on-demand, Immich candidate) |
-| MacBook Pro M1 | — | — | 32GB RAM (on-demand compute, dev/testing) |
+| Raspberry Pi 3B+ | — | — | 1GB RAM (DNS backup) |
+| Mac Mini 2018 | — | — | i5, 8GB RAM (backup homelab device) |
+| MacBook Pro M1 | — | — | 32GB RAM, runs Immich (OrbStack) |
 | 2TB Samsung portable SSD | — | — | Photo backup |
 
 ## Node Allocation
@@ -44,8 +44,11 @@ make status             # Show running containers
 | Node | Hostname | Services |
 |------|----------|----------|
 | RPi 3B+ | `pi-infra` | AdGuard Home, Tailscale |
+| RPi 3B+ (backup) | — | AdGuard Home (DNS backup), Tailscale |
 | Intel NUC | `nuc` | Jellyfin, Tailscale |
-| RPi 5 | `dragospi5` | NAS (Samba/NFS), Filebrowser, Tailscale, *arr stack |
+| RPi 5 | `dragospi5` | NAS (Samba/NFS), Filebrowser, *arr stack, Tailscale |
+| MacBook Pro M1 | — | Immich (OrbStack), Tailscale |
+| Mac Mini 2018 | — | Backup homelab device, Tailscale |
 
 ## Coding Guidelines
 

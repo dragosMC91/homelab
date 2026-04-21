@@ -1,0 +1,178 @@
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    container_name: immich-server
+    restart: unless-stopped
+
+    ports:
+      - "${IMMICH_PORT:-2283}:2283"
+
+    volumes:
+      - ${UPLOAD_LOCATION:-./data/upload}:/usr/src/app/upload
+      - /etc/localtime:/etc/localtime:ro
+
+    environment:
+      - TZ=${TZ:-Europe/Bucharest}
+      - DB_HOSTNAME=immich-postgres
+      - DB_PORT=5432
+      - DB_DATABASE_NAME=${DB_DATABASE_NAME:-immich}
+      - DB_USERNAME=${DB_USERNAME:-immich}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOSTNAME=immich-redis
+      - IMMICH_MACHINE_LEARNING_URL=http://immich-machine-learning:3003
+
+    depends_on:
+      immich-redis:
+        condition: service_healthy
+      immich-postgres:
+        condition: service_healthy
+
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test: ["CMD", "node", "/usr/src/app/dist/healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    deploy:
+      resources:
+        limits:
+          memory: 6g
+          cpus: "6.0"
+
+    labels:
+      - "com.homelab.service=immich"
+      - "com.homelab.description=Photo & Video Management"
+
+    networks:
+      - homelab
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    container_name: immich-machine-learning
+    restart: unless-stopped
+
+    volumes:
+      - ./data/model-cache:/cache
+
+    environment:
+      - TZ=${TZ:-Europe/Bucharest}
+
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import requests; requests.get('http://localhost:3003/ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    deploy:
+      resources:
+        limits:
+          memory: 6g
+          cpus: "6.0"
+
+    labels:
+      - "com.homelab.service=immich-ml"
+      - "com.homelab.description=Immich Machine Learning"
+
+    networks:
+      - homelab
+
+  immich-redis:
+    image: redis:7-alpine
+    container_name: immich-redis
+    restart: unless-stopped
+
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
+
+    labels:
+      - "com.homelab.service=immich-redis"
+      - "com.homelab.description=Immich Redis Cache"
+
+    networks:
+      - homelab
+
+  immich-postgres:
+    image: tensorchord/pgvecto-rs:pg16-v0.2.0
+    container_name: immich-postgres
+    restart: unless-stopped
+
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./data/backups:/backups
+
+    environment:
+      - POSTGRES_DB=${DB_DATABASE_NAME:-immich}
+      - POSTGRES_USER=${DB_USERNAME:-immich}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--data-checksums
+
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: "2.0"
+
+    labels:
+      - "com.homelab.service=immich-postgres"
+      - "com.homelab.description=Immich PostgreSQL + pgvecto.rs"
+
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

@@ -35,12 +35,13 @@ Each service is fully self-contained in its own directory with its own compose f
 | Host | Hardware | OS | Services | Hostname |
 |------|----------|----|----------|----------|
 | Raspberry Pi 3B+ | 1GB RAM | RPi OS Lite 64-bit | AdGuard Home, Tailscale | `pi-infra` |
+| Raspberry Pi 3B+ (backup) | 1GB RAM | RPi OS Lite 64-bit | AdGuard Home (DNS backup), Tailscale | — |
 | Intel NUC 8 Pro | i3-8145U, 16GB RAM | Ubuntu Server 24.04 LTS | Jellyfin, Uptime Kuma, Tailscale | `nuc` |
-| Raspberry Pi 5 | 4GB RAM, Penta SATA HAT | RPi OS Lite 64-bit | NAS (Samba/NFS), Tailscale | `pi-nas` |
-| Mac Mini 2018 | Intel i5, 8GB RAM | — | Future / on-demand | — |
-| MacBook Pro M1 | 32GB RAM | macOS | On-demand compute (Immich) | — |
+| Raspberry Pi 5 | 4GB RAM, Penta SATA HAT | RPi OS Lite 64-bit | NAS (Samba/NFS), *arr stack, Tailscale | `dragospi5` |
+| MacBook Pro M1 | 32GB RAM | macOS (OrbStack) | Immich, Tailscale | — |
+| Mac Mini 2018 | Intel i5, 8GB RAM | — | Backup homelab device, Tailscale | — |
 
-Tailscale runs on every node for secure remote access. AdGuard Home is configured as the Tailscale DNS server so all remote devices (phone, laptop) get network-wide ad-blocking.
+Tailscale runs on every node for secure remote access. AdGuard Home is configured as the Tailscale DNS server so all remote devices (phone, laptop) get network-wide ad-blocking; a second Pi 3B+ runs AdGuard Home as a DNS backup.
 
 ## Tailscale Auth Key Setup
 
@@ -102,12 +103,16 @@ You can use the **same reusable key** on every node — no need to generate a se
 
 ## Quickstart (macOS)
 
-### 1. Install Colima and Docker
+### 1. Install OrbStack
+
+[OrbStack](https://orbstack.dev/) is the Docker runtime used on the MacBook Pro M1 — lighter and faster than Docker Desktop.
 
 ```bash
-brew install colima docker docker-compose
-colima start --cpu 2 --memory 4 --disk 60
+brew install orbstack
+open -a OrbStack
 ```
+
+OrbStack ships with `docker` and `docker compose` CLIs.
 
 ### 2. Clone and set up
 

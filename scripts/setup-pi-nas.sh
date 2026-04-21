@@ -379,6 +379,25 @@ apt-get install -y samba samba-common-bin
 
 SAMBA_CONF="/etc/samba/smb.conf"
 
+# Harden Samba [global] settings:
+#   - Encrypt all traffic (SMB3 encryption + signing mandatory)
+#   - Block legacy protocols (SMBv1/v2)
+#   - Restrict access to Tailscale network only (100.64.0.0/10 CGNAT range)
+if ! grep -q "server smb encrypt" "$SAMBA_CONF" 2>/dev/null; then
+    # Insert hardening directives into the existing [global] section
+    # (appending a second [global] block works for most directives, but
+    # hosts allow/deny must be in the main [global] to take effect reliably)
+    sed -i '/^\[global\]/a\
+   server smb encrypt = mandatory\
+   server signing = mandatory\
+   min protocol = SMB3_11\
+   hosts allow = 100.64.0.0/10 127.0.0.1\
+   hosts deny = 0.0.0.0/0' "$SAMBA_CONF"
+    echo "Samba [global] hardening applied (SMB3-only, Tailscale-only)."
+else
+    echo "Samba [global] hardening already present -- skipping."
+fi
+
 # Create the nasusers group (used for shared folder access and FileBrowser)
 if ! getent group nasusers &>/dev/null; then
     groupadd nasusers
@@ -414,7 +433,7 @@ for nas_user in "${NAS_USERS[@]}"; do
 
 [$nas_user]
    path = /mnt/nas-hdd/$nas_user
-   browseable = yes
+   browseable = no
    read only = no
    create mask = 0770
    directory mask = 0770
@@ -445,7 +464,7 @@ if ! grep -q "\[shared\]" "$SAMBA_CONF" 2>/dev/null; then
 
 [shared]
    path = /mnt/nas-hdd/shared
-   browseable = yes
+   browseable = no
    read only = no
    create mask = 0775
    directory mask = 0775
@@ -611,22 +630,24 @@ echo "       make up-tailscale"
 echo "       make up-filebrowser"
 echo "  6. Access FileBrowser at: http://$HOSTNAME.local:8082"
 echo "     (default login: admin / admin — change on first login)"
-echo "  7. Connect to NAS shares via Samba:"
+echo "  7. Connect to NAS shares via Samba (Tailscale only):"
+echo "     NOTE: Samba is bound to the Tailscale interface only."
+echo "     All clients must be on your tailnet to connect."
 echo ""
 echo "     macOS:"
 echo "       Finder -> Go -> Connect to Server (Cmd+K)"
-echo "       Enter: smb://$HOSTNAME.local/<username>"
+echo "       Enter: smb://$HOSTNAME/<username>"
 echo "       Log in with the Samba username and password"
 echo "       Check 'Remember this password in my keychain' to save credentials"
 echo ""
 echo "     iOS (Files app):"
 echo "       Open Files -> tap '...' (top-right) -> Connect to Server"
-echo "       Enter: smb://$HOSTNAME.local/<username>"
+echo "       Enter: smb://$HOSTNAME/<username>"
 echo "       Log in with the Samba username and password"
 echo ""
-echo "     Available shares:"
+echo "     Available shares (not browseable — type the path directly):"
 for nas_user in "${NAS_USERS[@]}"; do
-    echo "       smb://$HOSTNAME.local/$nas_user  (private)"
+    echo "       smb://$HOSTNAME/$nas_user  (private)"
 done
-echo "       smb://$HOSTNAME.local/shared   (shared)"
+echo "       smb://$HOSTNAME/shared   (shared)"
 echo ""

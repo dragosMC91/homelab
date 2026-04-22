@@ -433,7 +433,7 @@ for nas_user in "${NAS_USERS[@]}"; do
 
 [$nas_user]
    path = /mnt/nas-hdd/$nas_user
-   browseable = no
+   browseable = yes
    read only = no
    create mask = 0770
    directory mask = 0770
@@ -464,7 +464,7 @@ if ! grep -q "\[shared\]" "$SAMBA_CONF" 2>/dev/null; then
 
 [shared]
    path = /mnt/nas-hdd/shared
-   browseable = no
+   browseable = yes
    read only = no
    create mask = 0775
    directory mask = 0775

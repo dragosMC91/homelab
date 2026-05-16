@@ -1,8 +1,55 @@
 # Homelab
 
-Portable, modular homelab configuration running Docker containers on macOS (via Colima), Intel NUC, and Raspberry Pi.
+Portable, modular homelab configuration running Docker containers on macOS (via OrbStack), Intel NUC, and Raspberry Pi — all packed into a desk-side mini rack.
 
 Clone the repo, pick the services you need, and run `make up`.
+
+## Table of Contents
+
+- [The Rack](#the-rack)
+- [Architecture](#architecture)
+- [Services](#services)
+- [Hosts](#hosts)
+- [Tailscale Auth Key Setup](#tailscale-auth-key-setup)
+- [Prerequisites](#prerequisites)
+- [Quickstart (macOS)](#quickstart-macos)
+- [Quickstart (Intel NUC)](#quickstart-intel-nuc)
+- [Quickstart (Raspberry Pi 3B+ — pi-infra)](#quickstart-raspberry-pi-3b--pi-infra)
+- [Usage](#usage)
+- [Maintenance](#maintenance)
+- [Adding a New Service](#adding-a-new-service)
+- [3D Printed Parts](#3d-printed-parts)
+
+## The Rack
+
+A **GeeekPi DeskPi RackMate T1 Plus** mini rack housing all compute, storage, and networking in a compact desk-side form factor. Active cooling throughout with **ARCTIC P12 Pro PST** fans. Power distribution via **2x DIGITUS 4-Way Power Strip (1U)** mounted in the rear, alongside the MacBook cooling fan.
+
+<p align="center">
+  <img src="docs/images/homelab-front.jpeg" alt="Rack front view" width="250"/>
+  &nbsp;&nbsp;
+  <img src="docs/images/homelab-top.jpeg" alt="Rack back top" width="250"/>
+  &nbsp;&nbsp;
+  <img src="docs/images/homelab-back.jpeg" alt="Rack back view" width="250"/>
+</p>
+
+<p align="center">
+  <img src="docs/images/internals-sketch.png" alt="Rack internals diagram" width="500"/>
+</p>
+
+### Layer Breakdown
+
+| Layer | Position | Contents |
+|-------|----------|----------|
+| **L0** | Bottom | 2x intake fans (base airflow) |
+| **L1** | — | 2x HDDs (horizontal) + 1x vertical fan behind them; Penta SATA HAT with vertical SSDs beside the HDD cage |
+| **L2** | — | 1x horizontal fan blowing down onto the Penta SATA HAT and SSDs |
+| **L3** | — | Network switch + Noctua NA-FC1 fan controller |
+| **L4** | — | Patch panel |
+| **L5** | Top | Intel NUC 8 Pro |
+| **Roof** | — | 1x intake fan blowing down onto the NUC |
+| **Back wall** | — | MacBook Pro M1 (clamshell) + 1x fan blowing directly onto it from inside the rack |
+
+An **Eaton Ellipse PRO** UPS sits beside the rack for power protection.
 
 ## Architecture
 
@@ -375,4 +422,24 @@ make clean            # Stop all services and remove the homelab network
    make up-my-service
    ```
 
+## 3D Printed Parts
 
+Custom 3D-printed mounts and adapters for the rack live in [`3d-prints/`](3d-prints/). STL files are ready to slice and print.
+
+| Part | STL | Description |
+|------|-----|-------------|
+| NAS 5U Slot | [`nas_slot_5u.stl`](3d-prints/nas_slot_5u.stl) | 5U caddy holding the HDDs, Penta SATA HAT, and vertical fan (L1) |
+| Switch + Fan Controller Mount | [`TL-SG108+NA-FC1-v6.stl`](3d-prints/TL-SG108+NA-FC1-v6.stl) | Combined mount for the TP-Link TL-SG108 switch and Noctua NA-FC1 (L3) |
+| 120mm Fan Rackmount | [`10-Inch-120mm-Fan-Rackmount.stl`](3d-prints/10-Inch-120mm-Fan-Rackmount.stl) | 10-inch rack panel with 120mm fan cutout (L2 horizontal fan) |
+| Back Exhaust Fan Mount | [`120mm_back_exhaust.stl`](3d-prints/120mm_back_exhaust.stl) | Rear 120mm fan mount for MacBook cooling (back wall) |
+| Dual Laptop Bracket (Left) | [`DualLaptopBracket-L.stl`](3d-prints/DualLaptopBracket-L.stl) | Left bracket for the clamshell MacBook mount |
+| Dual Laptop Bracket (Right) | [`DualLaptopBracket-R.stl`](3d-prints/DualLaptopBracket-R.stl) | Right bracket for the clamshell MacBook mount |
+
+### Reference Designs
+
+Starting points used for some of the custom parts above:
+
+- [Dual Laptop Stand](https://www.thingiverse.com/thing:4230307) — base design for the MacBook clamshell brackets
+- [Blank 10-inch Rack 3U Plate](https://www.printables.com/model/1629106-blank-10-inch-rack-3u-plate-fits-core-one) — blank plate used as a starting template
+- [10-inch Rack 1U 120mm Fan Mount](https://makerworld.com/en/models/1962259-10-inch-rack-1u-120mm-fan-mount#profileId-2109254) — fan mount panel reference
+- [Customizable Fan Mount Plates for 10-inch Rack](https://makerworld.com/en/models/1878745-customizable-fan-mount-plates-for-10-inch-rack#profileId-2086173) — parametric fan mount reference

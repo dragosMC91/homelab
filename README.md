@@ -25,11 +25,11 @@ Clone the repo, pick the services you need, and run `make up`.
 A **GeeekPi DeskPi RackMate T1 Plus** mini rack housing all compute, storage, and networking in a compact desk-side form factor. Active cooling throughout with **ARCTIC P12 Pro PST** fans. Power distribution via **2x DIGITUS 4-Way Power Strip (1U)** mounted in the rear, alongside the MacBook cooling fan.
 
 <p align="center">
-  <img src="docs/images/homelab-front.jpeg" alt="Rack front view" width="250"/>
+  <img src="docs/images/homelab-front.jpeg" alt="Rack front view" width="220"/>
   &nbsp;&nbsp;
-  <img src="docs/images/homelab-top.jpeg" alt="Rack back top" width="250"/>
+  <img src="docs/images/homelab-top.jpeg" alt="Rack back top" width="220"/>
   &nbsp;&nbsp;
-  <img src="docs/images/homelab-back.jpeg" alt="Rack back view" width="250"/>
+  <img src="docs/images/homelab-back.jpeg" alt="Rack back view" width="220"/>
 </p>
 
 <p align="center">

@@ -2,6 +2,8 @@
 
 Portable, modular homelab configuration running Docker containers on macOS (via OrbStack), Intel NUC, and Raspberry Pi — all packed into a desk-side mini rack.
 
+Self-hosted everything: DNS ad-blocking, media streaming, photo management, NAS, and monitoring — no subscriptions, no cloud lock-in, no dependency on US services that can rug-pull pricing or access at any time. Your data stays on hardware you own.
+
 Clone the repo, pick the services you need, and run `make up`.
 
 ## Table of Contents
@@ -71,11 +73,15 @@ Each service is fully self-contained in its own directory with its own compose f
 
 ## Services
 
-| Service | Description | Ports | Docs |
-|---------|-------------|-------|------|
-| **AdGuard Home** | Network-wide DNS ad blocker | `53` (DNS, NUC) / `5353` (macOS), `3000` (Web UI) | [adguard-home](services/adguard-home/) |
-| **Tailscale** | Mesh VPN / secure remote access | Host networking | [tailscale](services/tailscale/) |
-| **Uptime Kuma** | Uptime monitoring dashboard | `3001` (Web UI) | [uptime-kuma](services/uptime-kuma/) |
+| Service | Description | Ports | Host | Docs |
+|---------|-------------|-------|------|------|
+| **AdGuard Home** | Network-wide DNS ad blocker | `53` (DNS) / `5353` (macOS), `3000` (Web UI) | `pi-infra` | [adguard-home](services/adguard-home/) |
+| **Tailscale** | Mesh VPN / secure remote access | Host networking | All nodes | [tailscale](services/tailscale/) |
+| **Jellyfin** | Media streaming server (HW transcoding) | `8096` (Web UI), `7359/udp` (discovery) | `nuc` | [jellyfin](services/jellyfin/) |
+| **Immich** | Self-hosted photo & video management | `2283` (Web UI) | MacBook Pro M1 | [immich](services/immich/) |
+| **Filebrowser** | Web-based file manager (Tailscale-only) | `8082` | `dragospi5` | [filebrowser](services/filebrowser/) |
+| ***arr* stack** | Prowlarr, Radarr, Sonarr, Seerr, qBittorrent | `9696`, `7878`, `8989`, `5055`, `8083` | `dragospi5` | [arr-stack](services/arr-stack/) |
+| **Uptime Kuma** | Uptime monitoring dashboard | `3001` (Web UI) | `nuc` | [uptime-kuma](services/uptime-kuma/) |
 
 ## Hosts
 
@@ -124,29 +130,14 @@ You can use the **same reusable key** on every node — no need to generate a se
 
 ## Prerequisites
 
-### macOS
+All hosts need **Git**, **Docker** (with Compose), and **Make**. You also need a free [Tailscale](https://tailscale.com/) account for the mesh VPN.
 
-- [Homebrew](https://brew.sh/) installed
-- Git installed
-
-### Intel NUC
-
-- Intel NUC 8 Pro (or similar x86_64 mini PC)
-- [Ubuntu Server 24.04 LTS](https://ubuntu.com/download/server) installed (minimal, no desktop)
-- USB stick for OS installation
-
-### Raspberry Pi 3B+ (pi-infra)
-
-- Raspberry Pi 3B+ (1GB RAM)
-- Raspberry Pi OS Lite 64-bit (no desktop)
-- SD card for boot + storage
-
-### Raspberry Pi 5 (pi-nas)
-
-- Raspberry Pi 5 (4GB RAM)
-- Raspberry Pi OS Lite 64-bit (no desktop)
-- USB SSD recommended for boot + storage
-- Penta SATA HAT for NAS drives
+| Host | OS | Extra Requirements |
+|------|----|--------------------|
+| MacBook Pro M1 | macOS + [OrbStack](https://orbstack.dev/) | [Homebrew](https://brew.sh/) |
+| Intel NUC 8 Pro | Ubuntu Server 24.04 LTS | Intel VA-API drivers (installed by `setup-nuc.sh`) |
+| Raspberry Pi 3B+ | RPi OS Lite 64-bit | SD card, cgroup memory limits enabled |
+| Raspberry Pi 5 | RPi OS Lite 64-bit | Penta SATA HAT for NAS drives |
 
 ## Quickstart (macOS)
 

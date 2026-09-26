@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "${IMMICH_PORT:-2283}:2283"
+      - "127.0.0.1:${IMMICH_PORT:-2283}:2283"
 
     volumes:
       - ${UPLOAD_LOCATION:-./data/upload}:/usr/src/app/upload
@@ -31,7 +31,7 @@ services:
       - no-new-privileges:true
 
     healthcheck:
-      test: ["CMD", "node", "/usr/src/app/dist/healthcheck.js"]
+      test: ["CMD", "curl", "-f", "http://localhost:2283/api/server/ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -55,6 +55,7 @@ services:
 
     networks:
       - homelab
+      - immich-internal
 
   immich-machine-learning:
     image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
@@ -71,7 +72,7 @@ services:
       - no-new-privileges:true
 
     healthcheck:
-      test: ["CMD", "python3", "-c", "import requests; requests.get('http://localhost:3003/ping')"]
+      test: ["CMD", "curl", "-f", "http://localhost:3003/ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -94,12 +95,16 @@ services:
       - "com.homelab.description=Immich Machine Learning"
 
     networks:
-      - homelab
+      - immich-internal
 
   immich-redis:
     image: redis:7-alpine
     container_name: immich-redis
     restart: unless-stopped
+
+    read_only: true
+    tmpfs:
+      - /data
 
     security_opt:
       - no-new-privileges:true
@@ -127,12 +132,13 @@ services:
       - "com.homelab.description=Immich Redis Cache"
 
     networks:
-      - homelab
+      - immich-internal
 
   immich-postgres:
-    image: tensorchord/pgvecto-rs:pg16-v0.2.0
+    image: ghcr.io/immich-app/postgres:16-vectorchord0.4.3-pgvectors0.2.0
     container_name: immich-postgres
     restart: unless-stopped
+    shm_size: 256m
 
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
@@ -168,11 +174,13 @@ services:
 
     labels:
       - "com.homelab.service=immich-postgres"
-      - "com.homelab.description=Immich PostgreSQL + pgvecto.rs"
+      - "com.homelab.description=Immich PostgreSQL + VectorChord"
 
     networks:
-      - homelab
+      - immich-internal
 
 networks:
   homelab:
     external: true
+  immich-internal:
+    driver: bridge

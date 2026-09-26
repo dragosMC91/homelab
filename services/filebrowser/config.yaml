@@ -1,0 +1,23 @@
+server:
+  port: 80
+  baseURL: "/"
+  database: /database/database.db
+  sources:
+    - path: /srv
+      name: srv
+      config:
+        defaultEnabled: true
+        defaultUserScope: "/"
+
+auth:
+  methods:
+    password:
+      enabled: true
+      signup: false
+
+userDefaults:
+  ui:
+    darkMode: true
+  account:
+    permissions:
+      download: true

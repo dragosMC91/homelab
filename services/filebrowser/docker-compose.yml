@@ -1,8 +1,13 @@
 services:
   filebrowser:
-    image: filebrowser/filebrowser:v2-s6
+    # FileBrowser Quantum — migrated from filebrowser/filebrowser (archived
+    # upstream 2026-09-01 with unpatched vulns). Config: ./config.yaml.
+    image: ghcr.io/gtsteffaniak/filebrowser:1.5.6-stable
     container_name: filebrowser
     restart: unless-stopped
+
+    # Image has no PUID/PGID support — run directly as the target UID/GID.
+    user: "${PUID:-1000}:${PGID:-1000}"
 
     ports:
       - "${TAILSCALE_IP:?Set TAILSCALE_IP in .env}:${FILEBROWSER_PORT:-8082}:80"
@@ -14,15 +19,13 @@ services:
       - /mnt/nas-hdd:/srv/nas-hdd
       - /mnt/nas-ssd:/srv/nas-ssd
       - ./data:/database
-      - ./settings.json:/config/settings.json
+      - ./config.yaml:/home/filebrowser/data/config.yaml
 
     environment:
       - TZ=${TZ:-Europe/Bucharest}
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
 
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:80/"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:80/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -38,7 +41,7 @@ services:
       resources:
         limits:
           cpus: "0.50"
-          memory: 256m
+          memory: 512m
 
     labels:
       - "com.homelab.service=filebrowser"

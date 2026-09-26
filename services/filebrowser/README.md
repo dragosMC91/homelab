@@ -1,28 +1,34 @@
 # Filebrowser
 
-Web-based file manager for the NAS.
+Web-based file manager for the NAS. Runs [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser) (`ghcr.io/gtsteffaniak/filebrowser`), a maintained fork of the original filebrowser, which was archived upstream in 2026 with unpatched vulnerabilities.
+
+## Quantum Image Paths
+
+- Config: `./config.yaml` mounted at `/home/filebrowser/data/config.yaml` (the image's default `FILEBROWSER_CONFIG` path)
+- Database: `./data/database.db` mounted at `/database/database.db` (set via `server.database` in `config.yaml`)
+- The image has no PUID/PGID support; compose sets `user: "${PUID}:${PGID}"` directly.
+- Health endpoint: `/health`
+
+## Migration Notes (from filebrowser v2)
+
+- The v2 database (`data/filebrowser.db`) is **not compatible** and is kept only as a backup — Quantum creates a fresh `database.db` on first start.
+- Default admin credentials are `admin`/`admin` (override with `auth.adminUsername`/`auth.adminPassword` in `config.yaml`). Change the password immediately after first login.
+- Users must be recreated in the UI (Settings → User Management) with the same scopes as before.
 
 ## User Scopes
 
-Filebrowser allows only **one scope (directory) per user**. To give users access to both their personal folder and shared folders, symlinks are used on the host:
+The single source is `/srv` (`defaultUserScope: "/"`), so scopes work as before: set each user's scope to `/nas-hdd/<username>`. They see their own files plus the `shared` symlink, which is followed transparently:
 
 ```
 /mnt/nas-hdd/x/shared -> ../shared
-/mnt/nas-hdd/y/shared  -> ../shared
-/mnt/nas-hdd/z/shared  -> ../shared
+/mnt/nas-hdd/y/shared -> ../shared
+/mnt/nas-hdd/z/shared -> ../shared
 ```
-
-Each user's scope is set to `/nas-hdd/<username>` in the Filebrowser UI. They see their own files plus the `shared` symlink, which Filebrowser follows transparently.
 
 To add a new user:
 ```bash
 ln -s /mnt/nas-hdd/shared /mnt/nas-hdd/<username>/shared
 ```
-Then create the user in the Filebrowser UI with scope `/nas-hdd/<username>`.
+Then create the user in the UI with scope `/nas-hdd/<username>`.
 
-## s6 Image Paths
-
-The `v2-s6` image expects:
-- Config: `/config/settings.json`
-- Database: `/database/filebrowser.db`
-- Listen address must be `0.0.0.0` (defaults to `127.0.0.1` otherwise)
+Note: Quantum supports multiple scopes per user natively, so the symlink workaround can be retired later if desired.

@@ -67,6 +67,18 @@ Open <http://192.168.55.111:8083>.
 4. In the **main view left sidebar**, right-click and select **New Category**:
    - Category `movies` with save path `/media/downloads/movies`
    - Category `tv-shows` with save path `/media/downloads/tv-shows`
+5. Under **Tools > Options > Downloads**, enable **Excluded file names** and add one pattern per line:
+   ```
+   *.exe
+   *.scr
+   *.bat
+   *.cmd
+   *.lnk
+   *.vbs
+   *.msi
+   *.com
+   ```
+   Fake releases often bundle malware executables; Sonarr/Radarr then block the import with "Found executable file with extension '.exe'". This setting is stored in `data/qbittorrent` and is lost only if that directory is wiped, so redo it on fresh installs.
 
 ## Step 4 — Configure Prowlarr
 

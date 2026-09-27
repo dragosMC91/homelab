@@ -12,6 +12,10 @@ server:
       config:
         defaultEnabled: true
         defaultUserScope: "/"
+        rules:
+          # root-only (700) on every ext4 volume — skip instead of logging
+          # "permission denied" on each index pass
+          - folderName: "lost+found"
 
 auth:
   methods:

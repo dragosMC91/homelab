@@ -18,14 +18,19 @@ Web-based file manager for the NAS. Runs [FileBrowser Quantum](https://github.co
 
 ## User Scopes
 
-Two sources in `config.yaml`, each with its own per-user scope:
+A **source** is a folder Quantum indexes (defined in `config.yaml`); a **scope** limits a user to a subfolder of a source. The sidebar usage bar always describes the whole source, never the user's scope — so each user gets a source pointing at their own LVM volume, which makes the bar show their allocation.
 
-| Source | Path | Granted | User scope |
-|--------|------|---------|------------|
-| `srv` | `/srv` (both disks) | Manually (`defaultEnabled: false`) | `/nas-hdd/<username>` |
+| Source | Path | Granted to | Scope |
+|--------|------|------------|-------|
+| `srv` | `/srv` (both disks) | Admin only (`defaultEnabled: false`) | `/` |
 | `shared` | `/srv/nas-hdd/shared` | Every user automatically (`defaultEnabled: true`), existing users included on the next start | `/` |
+| `<username>` | `/srv/nas-hdd/<username>` | That user only (`defaultEnabled: false`) | `/` |
 
-To add a new user: Settings → User Management → New, then add an `srv` scope of `/nas-hdd/<username>`. `shared` is added on its own. A user created without an `srv` scope sees only `shared` — safe by default.
+To add a new user:
+1. Add a `/srv/nas-hdd/<username>` source to `config.yaml` (copy an existing user's block), commit, pull on the Pi, `make restart-filebrowser`.
+2. Settings → User Management → New; add a scope of `/` on the `<username>` source. `shared` is added on its own. Don't give users an `srv` scope.
+
+Sidebar links are stored per user and are not rebuilt when a source is added, so users that existed before a new source get the scope but no sidebar entry. Fix it as that user: sidebar pencil icon (Customize Sidebar Links) → Add New Link → Link Type **Source** → select the source → Save.
 
 The v2-era `<user>/shared -> ../shared` symlinks do **not** work in Quantum: it refuses symlinks that resolve outside the user's scope. Samba has its own `[shared]` share and never used them, so they can be removed: `sudo unlink /mnt/nas-hdd/<username>/shared`.
 

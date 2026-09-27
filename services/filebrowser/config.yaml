@@ -10,8 +10,8 @@ server:
     - path: /srv
       name: srv
       config:
-        # Not auto-granted: its default scope "/" would expose the whole NAS.
-        # Give each user a scope of /nas-hdd/<username> by hand.
+        # Admin-only (both disks). Not auto-granted: its default scope "/" would
+        # expose the whole NAS. Users get their own volume source below instead.
         defaultEnabled: false
         defaultUserScope: "/"
         rules:
@@ -26,6 +26,27 @@ server:
       config:
         defaultEnabled: true
         defaultUserScope: "/"
+        rules:
+          - folderName: "lost+found"
+    # One source per user volume (each is its own LVM mount). The sidebar usage
+    # bar always describes a whole source, never a user's scope within it, so
+    # this is the only way the bar shows the user's own allocation.
+    - path: /srv/nas-hdd/dragos
+      name: dragos
+      config:
+        defaultEnabled: false
+        rules:
+          - folderName: "lost+found"
+    - path: /srv/nas-hdd/sonia
+      name: sonia
+      config:
+        defaultEnabled: false
+        rules:
+          - folderName: "lost+found"
+    - path: /srv/nas-hdd/ioana
+      name: ioana
+      config:
+        defaultEnabled: false
         rules:
           - folderName: "lost+found"
 

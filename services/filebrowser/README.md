@@ -18,18 +18,15 @@ Web-based file manager for the NAS. Runs [FileBrowser Quantum](https://github.co
 
 ## User Scopes
 
-The single source is `/srv` (`defaultUserScope: "/"`), so scopes work as before: set each user's scope to `/nas-hdd/<username>`. They see their own files plus the `shared` symlink, which is followed transparently:
+Two sources in `config.yaml`, each with its own per-user scope:
 
-```
-/mnt/nas-hdd/x/shared -> ../shared
-/mnt/nas-hdd/y/shared -> ../shared
-/mnt/nas-hdd/z/shared -> ../shared
-```
+| Source | Path | Granted | User scope |
+|--------|------|---------|------------|
+| `srv` | `/srv` (both disks) | Manually (`defaultEnabled: false`) | `/nas-hdd/<username>` |
+| `shared` | `/srv/nas-hdd/shared` | Every user automatically (`defaultEnabled: true`), existing users included on the next start | `/` |
 
-To add a new user:
-```bash
-ln -s /mnt/nas-hdd/shared /mnt/nas-hdd/<username>/shared
-```
-Then create the user in the UI with scope `/nas-hdd/<username>`.
+To add a new user: Settings → User Management → New, then add an `srv` scope of `/nas-hdd/<username>`. `shared` is added on its own. A user created without an `srv` scope sees only `shared` — safe by default.
 
-Note: Quantum supports multiple scopes per user natively, so the symlink workaround can be retired later if desired.
+The v2-era `<user>/shared -> ../shared` symlinks do **not** work in Quantum: it refuses symlinks that resolve outside the user's scope. Samba has its own `[shared]` share and never used them, so they can be removed: `sudo unlink /mnt/nas-hdd/<username>/shared`.
+
+Writing to `shared` (`root:nasusers`, mode 2775) requires `PGID` in `.env` to be the `nasusers` GID (`getent group nasusers`); otherwise it is read-only in FileBrowser.

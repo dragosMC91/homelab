@@ -10,11 +10,23 @@ server:
     - path: /srv
       name: srv
       config:
-        defaultEnabled: true
+        # Not auto-granted: its default scope "/" would expose the whole NAS.
+        # Give each user a scope of /nas-hdd/<username> by hand.
+        defaultEnabled: false
         defaultUserScope: "/"
         rules:
           # root-only (700) on every ext4 volume — skip instead of logging
           # "permission denied" on each index pass
+          - folderName: "lost+found"
+    # Own source because Quantum refuses symlinks that resolve outside a user's
+    # scope (the v2-era <user>/shared -> ../shared links no longer work).
+    # defaultEnabled grants it to every user, existing ones included, on startup.
+    - path: /srv/nas-hdd/shared
+      name: shared
+      config:
+        defaultEnabled: true
+        defaultUserScope: "/"
+        rules:
           - folderName: "lost+found"
 
 auth:

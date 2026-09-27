@@ -6,6 +6,7 @@ Web-based file manager for the NAS. Runs [FileBrowser Quantum](https://github.co
 
 - Config: `./config.yaml` mounted at `/home/filebrowser/data/config.yaml` (the image's default `FILEBROWSER_CONFIG` path)
 - Database: `./data/database.db` mounted at `/database/database.db` (set via `server.database` in `config.yaml`)
+- Cache + search index: `./data/tmp` (`server.cacheDir: /database/tmp`). The image default (`/home/filebrowser/tmp`) is writable only by UID 1000, so any other `PUID` crashes at startup with `cacheDir failed to create cache directory`.
 - The image has no PUID/PGID support; compose sets `user: "${PUID}:${PGID}"` directly.
 - Health endpoint: `/health`
 

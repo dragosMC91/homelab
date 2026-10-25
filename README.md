@@ -19,6 +19,7 @@ Clone the repo, pick the services you need, and run `make up`.
 - [Quickstart (Raspberry Pi 3B+ — pi-infra)](#quickstart-raspberry-pi-3b--pi-infra)
 - [Usage](#usage)
 - [Maintenance](#maintenance)
+  - [Updating services (per node)](#updating-services-per-node)
 - [Adding a New Service](#adding-a-new-service)
 - [3D Printed Parts](#3d-printed-parts)
 
@@ -360,19 +361,21 @@ make up-uptime-kuma
 
 ## Maintenance
 
-### Update all services to latest images
+### Updating services (per node)
+
+Run on each node, in the reboot order under [OS upgrades](#os-upgrades-apt-and-reboots). Connect over the LAN IP, not Tailscale SSH — updating the Tailscale container or Docker Engine drops tailnet sessions.
 
 ```bash
-make pull
-make restart
+ssh -t <user>@<lan-ip> tmux new -A -s upd     # survives a dropped connection; re-run to reattach (Pis: sudo apt install tmux once)
+sudo apt update && sudo apt full-upgrade -y   # OS, kernel, Docker Engine
+cd ~/homelab && git pull                      # picks up bumped image tags
+make pull-<svc> && make up-<svc>              # once per service on this node; only changed containers restart
+docker image prune -f                         # drop superseded images
 ```
 
-### Update a single service
+Then check whether a reboot is needed (see below) and confirm `make status` shows every container `healthy`.
 
-```bash
-make pull-adguard-home
-make restart-adguard-home
-```
+Stick to the per-service targets: `make pull`, `make up` and `make restart` act on every directory under `services/`, so on a single node they also start services that belong on other nodes.
 
 ### View logs
 
@@ -386,6 +389,31 @@ make logs-uptime-kuma
 ```bash
 make clean            # Stop all services and remove the homelab network
 ```
+
+### OS upgrades (apt) and reboots
+
+```bash
+sudo apt update && sudo apt full-upgrade -y
+```
+
+`/var/run/reboot-required` is **not** created on Raspberry Pi OS, so compare the running kernel to the installed one instead:
+
+```bash
+uname -r          # running
+ls /lib/modules   # installed — if a newer version is listed, reboot
+```
+
+Before rebooting a Pi, confirm the boot partition is consistent (a mismatch here leaves the Pi unreachable at an `(initramfs)` shell):
+
+```bash
+grep -n '^initramfs' /boot/firmware/config.txt            # must be empty — auto_initramfs=1 handles it
+ls /lib/modules                                            # installed kernel version(s)
+lsinitramfs /boot/firmware/initramfs* | grep -m1 -oE 'lib/modules/[^/]+'   # must match the newest above
+```
+
+Containers restart on their own after a reboot (`restart: unless-stopped`) — no `make up` needed. Reboot order: `dragospi5` (NAS) first, then `nuc`, then the two DNS Pis one at a time, verifying `dig @<pi-ip> example.com` answers before doing the next.
+
+> **Pi 5 (`dragospi5`) gotcha:** root is on an SSD behind the Penta SATA HAT, so the initramfs must carry the AHCI modules. A manual `initramfs <file> followkernel` line in `config.txt` pins a file that never gets regenerated; the next kernel upgrade then boots with stale modules and fails with `ALERT! PARTUUID=... does not exist`. Never add that line — `auto_initramfs=1` plus `update-initramfs` keeps `initramfs_2712` in sync (see step 6 in `scripts/setup-pi-nas.sh`). Recovery: mount the SD card on another machine, check `initramfs_2712` is as new as `kernel_2712.img`, and remove the manual line.
 
 ## Adding a New Service
 

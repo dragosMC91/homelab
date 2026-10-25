@@ -94,11 +94,6 @@ set -euo pipefail
 #    the pcie sata SSD at boot time.
 #
 #      sudo apt install initramfs-tools
-#      sudo mkinitramfs -o /boot/firmware/initrd.img
-#
-#    Add to /boot/firmware/config.txt:
-#
-#      initramfs initrd.img followkernel
 #
 #    Add the SATA modules to initramfs:
 #
@@ -113,8 +108,26 @@ set -euo pipefail
 #      # Add them:
 #      echo -e "ahci\nlibahci\nlibata" | sudo tee -a /etc/initramfs-tools/modules
 #
-#      # Regenerate initramfs:
-#      sudo mkinitramfs -o /boot/firmware/initrd.img
+#      # Generate initramfs for the running kernel:
+#      sudo update-initramfs -u
+#
+#    This writes /boot/firmware/initramfs_2712. Make sure
+#    /boot/firmware/config.txt contains (it does by default on RPi OS):
+#
+#      auto_initramfs=1
+#
+#    Do NOT add a manual "initramfs <file> followkernel" line. A manual
+#    line points at a fixed file that is never regenerated, so the next
+#    kernel upgrade (apt full-upgrade) boots a new kernel with an old
+#    initramfs whose SATA modules don't load. The Pi then drops to an
+#    (initramfs) shell with "ALERT! PARTUUID=... does not exist" and is
+#    unreachable over the network. With auto_initramfs=1 the firmware
+#    picks initramfs_2712 for kernel_2712.img, and update-initramfs
+#    regenerates it automatically on every kernel upgrade.
+#
+#    Recovery if this happens anyway: mount the SD card on another
+#    machine, verify initramfs_2712 is newer than kernel_2712.img in
+#    /boot/firmware, and remove the manual initramfs line from config.txt.
 #
 #    Reboot.
 #

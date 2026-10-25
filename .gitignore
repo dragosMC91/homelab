@@ -1,4 +1,6 @@
 .env
+.env.*
+!.env.example
 
 # macOS
 .DS_Store
@@ -16,6 +18,11 @@
 *.p12
 *.pfx
 secrets/
+
+# App databases (password hashes, API keys)
+*.db
+*.sqlite
+*.sqlite3
 
 # Editor
 .vscode/

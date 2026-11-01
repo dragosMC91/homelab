@@ -195,14 +195,60 @@ else
 fi
 
 # ------------------------------------------------------------------
-# 6. Create Docker network and seed .env files
+# 6. Harden SSH (key-only login, no root login)
+# ------------------------------------------------------------------
+
+SSH_DROPIN=/etc/ssh/sshd_config.d/01-hardening.conf
+SSH_HARDENING='PubkeyAuthentication yes
+AuthenticationMethods publickey
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no'
+AUTH_KEYS="/home/$REAL_USER/.ssh/authorized_keys"
+
+# Turning passwords off is only safe if sshd will accept the user's key: at least
+# one parseable key, and no group/world-writable path that StrictModes rejects.
+ssh_key_usable() {
+    [[ -s "$AUTH_KEYS" ]] || return 1
+    sudo -u "$REAL_USER" ssh-keygen -l -f "$AUTH_KEYS" &>/dev/null || return 1
+    local p
+    for p in "/home/$REAL_USER" "/home/$REAL_USER/.ssh" "$AUTH_KEYS"; do
+        [[ "$(stat -c %U "$p")" == "$REAL_USER" || "$(stat -c %U "$p")" == root ]] || return 1
+        [[ -z "$(find "$p" -maxdepth 0 \( -perm -g+w -o -perm -o+w \))" ]] || return 1
+    done
+}
+
+if [[ -f "$SSH_DROPIN" && "$(cat "$SSH_DROPIN")" == "$SSH_HARDENING" ]]; then
+    echo "SSH is already key-only ($SSH_DROPIN) -- skipping."
+elif ssh_key_usable; then
+    log "Restricting SSH to key-only login ($SSH_DROPIN)"
+    install -d -m 0755 /etc/ssh/sshd_config.d
+    SSH_PREV=""
+    if [[ -f "$SSH_DROPIN" ]]; then SSH_PREV=$(mktemp); cp -p "$SSH_DROPIN" "$SSH_PREV"; fi
+    # Named 01- so it wins: sshd keeps the first value it reads for each setting.
+    printf '%s\n' "$SSH_HARDENING" > "$SSH_DROPIN"
+    if sshd -t; then
+        systemctl try-reload-or-restart ssh
+        echo "Before closing this session, confirm a key login works from another terminal: ssh $REAL_USER@<this-host>"
+    else
+        if [[ -n "$SSH_PREV" ]]; then cp -p "$SSH_PREV" "$SSH_DROPIN"; else rm -f "$SSH_DROPIN"; fi
+        echo "WARNING: sshd rejected the SSH config -- restored the previous state, SSH unchanged." >&2
+    fi
+    [[ -z "$SSH_PREV" ]] || rm -f "$SSH_PREV"
+else
+    echo "WARNING: no usable key in $AUTH_KEYS (missing, unparseable, or writable by others) -- skipping SSH hardening."
+    echo "         Copy your key first (ssh-copy-id $REAL_USER@<this-host>), then re-run this script."
+fi
+
+# ------------------------------------------------------------------
+# 7. Create Docker network and seed .env files
 # ------------------------------------------------------------------
 
 log "Running 'make setup' to create network and seed .env files"
 make -C "$REPO_DIR" setup
 
 # ------------------------------------------------------------------
-# 7. Verify setup
+# 8. Verify setup
 # ------------------------------------------------------------------
 
 log "Running post-setup verification"
@@ -271,6 +317,10 @@ check "User '$REAL_USER' is in render group" \
 # Docker network
 check "Docker network 'homelab' exists" \
     docker network inspect homelab
+
+# SSH
+check "SSH is key-only with no root login" \
+    bash -c "sshd -T | grep -qx 'passwordauthentication no' && sshd -T | grep -qx 'permitrootlogin no'"
 
 # Summary
 echo ""

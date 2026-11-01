@@ -307,7 +307,7 @@ docker info | grep -i cgroup
 
 ### 5. Set a static IP
 
-Assign a static IP to the Pi via your router's DHCP reservation (bind the Pi's MAC address to a fixed IP). This is essential since this Pi will serve DNS for your entire network.
+Assign a static IP to the Pi via your router's DHCP reservation (bind the Pi's MAC address to a fixed IP). LAN clients that opt into AdGuard point at this IP, so it must not change.
 
 All Pis should use Ethernet and disable WiFi to avoid dual-interface issues (the router may show stale DHCP entries from the WiFi interface):
 ```bash
@@ -332,9 +332,9 @@ make up-adguard-home
 
 Open `http://pi-infra.local:3000` in your browser and complete the setup wizard.
 
-### 8. Point your network to AdGuard
+### 8. Keep the router on public DNS
 
-In your router's DHCP settings, set the Pi's static IP as the primary DNS server. All devices on the network will now use AdGuard Home for DNS.
+AdGuard is opt-in, not network-wide: the router's DHCP hands out public resolvers (`1.1.1.1`, `8.8.8.8`), so LAN devices bypass AdGuard by default. A device gets AdGuard by enabling Tailscale (step 9). To opt in a LAN device without Tailscale, set its DNS to the Pi's static IP manually.
 
 ### 9. Configure Tailscale DNS (remote ad-blocking)
 

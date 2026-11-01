@@ -163,11 +163,7 @@ tailscale status                 # homelab/nuc/pi-nas missing from peer list
 }
 ```
 
-Also set DNS on the Ethernet adapter as a belt-and-suspenders measure. Replace the service name with whatever `networksetup -listallnetworkservices` reports for your adapter:
-
-```bash
-networksetup -setdnsservers "AX88179B" 100.68.66.22
-```
+Don't point the adapter at `100.68.66.22`: that makes all DNS depend on the tunnel. If the policy is fine and resolver #1 still has no nameservers, see the [Tailscale troubleshooting list](../tailscale/README.md#macbook-pro-m1-setup-headless-server-homebrew-tailscaled).
 
 **Historical note — why Wi-Fi initially appeared to work**: during the original diagnosis, Wi-Fi was still enabled and resolved fine while Ethernet was broken. That was likely a stale Tailscale session cached from when the Mac had been authenticated as a personal `group:admin` device (without `--advertise-tags`). A fresh connection on Ethernet forced ACL re-evaluation, exposing the missing grant. Wi-Fi is now disabled, so this path is closed off entirely.
 

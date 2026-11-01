@@ -4,13 +4,13 @@ Mesh VPN providing secure remote access across all homelab nodes.
 
 ## MacBook Pro M1 setup (headless server, Homebrew tailscaled)
 
-The M1 sits in the rack and is only reached over the tailnet (SSH + Screen Sharing). It is also the tailnet's exit node, for routing your traffic home while travelling. It runs the open-source `tailscaled` from Homebrew as a root launchd daemon, so it is reachable after a reboot without anyone logging in. Tailscale's DNS programming is disabled and system DNS stays on plain DHCP — the node has no need for AdGuard over the tunnel, and any DNS dependency on the tunnel breaks boot (see Known Issues).
+The M1 sits in the rack and is only reached over the tailnet (SSH + Screen Sharing). It is also the tailnet's exit node, for routing your traffic home while travelling. It runs the open-source `tailscaled` from Homebrew as a root launchd daemon, so it is reachable after a reboot without anyone logging in. Tailscale's DNS programming is disabled and system DNS is set by hand to the public resolvers the router hands out — the node has no need for AdGuard over the tunnel, and any DNS dependency on the tunnel breaks boot (see Known Issues).
 
 ```bash
 brew install tailscale
 sudo brew services start tailscale                      # /Library/LaunchDaemons/sh.brew.tailscale.plist, state in /Library/Tailscale/
 sudo tailscale up --accept-dns=false --advertise-tags=tag:photos --advertise-exit-node   # browser auth; then approve the exit node in the admin console
-networksetup -setdnsservers AX88179B Empty              # DHCP DNS on the USB Ethernet service (Wi-Fi is fallback only)
+sudo networksetup -setdnsservers AX88179B 1.1.1.1 8.8.8.8   # static IP service gets no DNS from DHCP; set it by hand (Wi-Fi is fallback only)
 ```
 
 macOS side:
@@ -23,8 +23,17 @@ macOS side:
 
 - Changing one setting: `sudo tailscale set --<flag>`. `tailscale up` refuses unless every non-default flag is restated; it prints the full command to copy.
 - Rebooting: with FileVault on, a plain restart stops at the pre-boot unlock screen — no OS, no network, no tailscaled. Use `sudo fdesetup authrestart` to reboot straight into macOS once.
-- Verify after reboot/upgrade: `tailscale status` (health check section must be empty), `tailscale version --daemon` (Client and Daemon match), `tailscale debug prefs | grep CorpDNS` (`false`).
-- No menu-bar UI — use the `tailscale` CLI. Updates via `brew upgrade`.
+- Verify after reboot/upgrade: `tailscale status` (health check section must be empty), `tailscale version --daemon` (Client and Daemon match), `tailscale debug prefs | grep CorpDNS` (`false`), `grep nameserver /etc/resolv.conf` (`1.1.1.1`, `8.8.8.8`).
+- No menu-bar UI — use the `tailscale` CLI. Updates via `brew upgrade`, which does not restart the daemon: run `sudo launchctl kickstart -k system/sh.brew.tailscale` afterwards (not `sudo brew services restart`, which leaves root-owned files in the keg). Screen Sharing and SSH drop for a few seconds.
+
+**Troubleshooting (start here):**
+
+- Getting in: the local user is `dragoshomelab` — SSH as any other name is refused. On the LAN, Screen Sharing also works at `vnc://192.168.50.22`.
+- Screen Sharing hangs after a daemon restart or DNS change: the old session is stale. Wait a minute, or quit the client with ⌘Q and reconnect.
+- Names don't resolve, IPs do (`dig @1.1.1.1 github.com` answers): check `grep nameserver /etc/resolv.conf`. Empty → [no DNS servers](#static-ip-ethernet-service-has-no-dns-servers-macos). `100.100.100.100` → [logged out after reboot](#open-source-tailscaled-logged-out-after-reboot-system-dns-dead-macos).
+- Admin console shows an old version: [stale daemon](#homebrew-tailscaled-duplicate-launch-item-daemon-stuck-on-the-old-version-macos).
+- Ad-block tests score low on the M1: expected, it uses public DNS, not AdGuard.
+- The tailnet policy is rarely the cause: its DNS grant covers every server tag. Check it only if `tailscale ping 100.68.66.22` fails.
 
 ## Pointing a client Mac's DNS at AdGuard over the tailnet
 
@@ -88,11 +97,28 @@ Prevention: never re-enable `--accept-dns` on this node; `tailscale up --reset` 
 ```bash
 sudo chown -R "$(whoami):admin" /opt/homebrew/Cellar/tailscale /opt/homebrew/opt/tailscale
 brew cleanup tailscale
-sudo brew services restart tailscale   # pick up the upgraded binary
+sudo launchctl kickstart -k system/sh.brew.tailscale   # pick up the upgraded binary
 tailscale version --daemon             # Client and Daemon versions must match
 ```
 
 Expect this to recur after each `sudo brew services` invocation.
+
+### Homebrew tailscaled: duplicate launch item, daemon stuck on the old version (macOS)
+
+Symptom after `brew upgrade`: the admin console shows the old version, `tailscale version` warns `client version ... != tailscaled server version`, and Login Items & Extensions → Allow in the Background lists `tailscaled` twice. Causes: `brew upgrade` leaves the running daemon on the old binary, and a `brew services start` without `sudo` once added a per-user agent in `~/Library/LaunchAgents/` next to the root daemon in `/Library/LaunchDaemons/`. Only the root daemon belongs. Fix (Nov 2026):
+
+```bash
+launchctl bootout gui/$(id -u)/sh.brew.tailscale 2>/dev/null
+rm ~/Library/LaunchAgents/sh.brew.tailscale.plist
+sudo launchctl kickstart -k system/sh.brew.tailscale
+tailscale version --daemon             # Client and Daemon versions must match
+```
+
+Never run `brew services` without `sudo` for tailscale.
+
+### Static IP Ethernet service has no DNS servers (macOS)
+
+Symptom: `brew update` fails with `Could not resolve host: github.com`; `/etc/resolv.conf` has no `nameserver` lines; `networksetup -getdnsservers AX88179B` says none are set. Cause: the service has a manual IP, so it gets no DNS from DHCP (`ipconfig getpacket en7` finds no lease). `sudo ipconfig set en7 DHCP` helps only until the next network change. Fix (Nov 2026): `sudo networksetup -setdnsservers AX88179B 1.1.1.1 8.8.8.8`.
 
 ## Tailnet DNS config (admin console)
 

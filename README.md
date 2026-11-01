@@ -18,6 +18,7 @@ Clone the repo, pick the services you need, and run `make up`.
 - [Quickstart (Intel NUC)](#quickstart-intel-nuc)
 - [Quickstart (Raspberry Pi 3B+ — pi-infra)](#quickstart-raspberry-pi-3b--pi-infra)
 - [Usage](#usage)
+- [Security](#security)
 - [Maintenance](#maintenance)
   - [Updating services (per node)](#updating-services-per-node)
 - [Adding a New Service](#adding-a-new-service)
@@ -358,6 +359,10 @@ make up-tailscale
 make up-uptime-kuma
 # ... same pattern for all services
 ```
+
+## Security
+
+Hardening measures in place (network edge, Tailscale, SSH, app auth, pinned images, secret scanning) and how to verify each are logged in [docs/security.md](docs/security.md). Run `make setup` (or `make hooks`) on every clone you commit from to enable the gitleaks pre-commit hook.
 
 ## Maintenance
 

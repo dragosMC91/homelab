@@ -368,7 +368,7 @@ Hardening measures in place (network edge, Tailscale, SSH, app auth, pinned imag
 
 ### Updating services (per node)
 
-Run on each node, in the reboot order under [OS upgrades](#os-upgrades-apt-and-reboots). Connect over the LAN IP, not Tailscale SSH — updating the Tailscale container or Docker Engine drops tailnet sessions.
+Run on each node, in the reboot order under [OS upgrades](#os-upgrades-apt-and-reboots). Connect over the LAN IP, not the tailnet IP — updating the Tailscale container or Docker Engine drops tailnet sessions.
 
 ```bash
 ssh -t <user>@<lan-ip> tmux new -A -s upd     # survives a dropped connection; re-run to reattach (Pis: sudo apt install tmux once)

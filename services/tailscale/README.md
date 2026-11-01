@@ -4,18 +4,18 @@ Mesh VPN providing secure remote access across all homelab nodes.
 
 ## MacBook Pro M1 setup (headless server, Homebrew tailscaled)
 
-The M1 sits in the rack and is only reached over the tailnet (SSH + Screen Sharing). It runs the open-source `tailscaled` from Homebrew as a root launchd daemon, so it is reachable after a reboot without anyone logging in. Tailscale's DNS programming is disabled and system DNS stays on plain DHCP — the node has no need for AdGuard over the tunnel, and any DNS dependency on the tunnel breaks boot (see Known Issues).
+The M1 sits in the rack and is only reached over the tailnet (SSH + Screen Sharing). It is also the tailnet's exit node, for routing your traffic home while travelling. It runs the open-source `tailscaled` from Homebrew as a root launchd daemon, so it is reachable after a reboot without anyone logging in. Tailscale's DNS programming is disabled and system DNS stays on plain DHCP — the node has no need for AdGuard over the tunnel, and any DNS dependency on the tunnel breaks boot (see Known Issues).
 
 ```bash
 brew install tailscale
 sudo brew services start tailscale                      # /Library/LaunchDaemons/sh.brew.tailscale.plist, state in /Library/Tailscale/
-sudo tailscale up --accept-dns=false --ssh --advertise-tags=tag:server   # browser auth; --ssh = Tailscale SSH (identity auth, no keys)
+sudo tailscale up --accept-dns=false --advertise-tags=tag:photos --advertise-exit-node   # browser auth; then approve the exit node in the admin console
 networksetup -setdnsservers AX88179B Empty              # DHCP DNS on the USB Ethernet service (Wi-Fi is fallback only)
 ```
 
 macOS side:
 
-- System Settings → General → Sharing → enable Remote Login and Screen Sharing. Connect via the tailnet hostname or IP.
+- System Settings → General → Sharing → enable Remote Login and Screen Sharing. Connect via the tailnet hostname or IP. SSH is key-only: copy your key with `ssh-copy-id`, then add the drop-in from [docs/security.md](../../docs/security.md#ssh). Tailscale SSH stays off.
 - System Settings → Privacy & Security → "Allow accessories to connect" → **Always**. Any other value blocks USB devices plugged in while locked or before login (`log show` says "device will not be registered for matching"), so the USB Ethernet adapter never gets an interface after a reboot.
 - Network: USB Ethernet adapter (service `AX88179B`, static IP, /24 mask) first in service order; Wi-Fi may stay on as fallback. Service names: `networksetup -listnetworkserviceorder`.
 

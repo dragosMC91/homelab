@@ -20,7 +20,7 @@ services:
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
       - TS_STATE_DIR=/var/lib/tailscale
-      - TS_EXTRA_ARGS=${TS_EXTRA_ARGS:---advertise-exit-node --ssh}
+      - TS_EXTRA_ARGS=${TS_EXTRA_ARGS:---reset}
       - TS_USERSPACE=${TS_USERSPACE:-false}
       - TS_ACCEPT_DNS=${TS_ACCEPT_DNS:-false}
 

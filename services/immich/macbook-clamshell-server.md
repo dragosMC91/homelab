@@ -140,7 +140,7 @@ The MacBook uses a USB-C Ethernet adapter for wired connectivity. macOS makes it
 
 **Symptom**: IP pings work (`ping 1.1.1.1` succeeds) but hostname resolution fails (`ping www.google.com` → "Unknown host"). Screen Sharing also breaks.
 
-**Cause**: Tailscale ACL missing a `tag:server` → `tag:server` grant. When the Mac uses `--advertise-tags=tag:server`, it loses its `group:admin` user identity and becomes a tagged device. Without a server-to-server rule, the Mac can't reach other tagged servers — including the AdGuard DNS server running on `pi-infra`.
+**Cause**: the tailnet policy has no rule letting the Mac's tag reach DNS. When the Mac uses `--advertise-tags`, it loses its `group:admin` user identity and becomes a tagged device, so it can reach only what grants allow its tag — and nothing allowed it to reach the AdGuard DNS server on `pi-infra` (`tag:dns`).
 
 **Diagnosis**:
 
@@ -153,13 +153,13 @@ tailscale ping 100.68.66.22      # "no matching peer"
 tailscale status                 # homelab/nuc/pi-nas missing from peer list
 ```
 
-**Fix**: add a server-to-server grant in the Tailscale admin console ACL:
+**Fix**: make sure the policy's DNS grant lists the Mac's tag (`tag:photos`). Grant DNS only, not every port between servers:
 
 ```json
 {
-    "src": ["tag:server"],
-    "dst": ["tag:server"],
-    "ip":  ["*"]
+    "src": ["autogroup:member", "tag:nas", "tag:media", "tag:photos"],
+    "dst": ["tag:dns"],
+    "ip":  ["tcp:53", "udp:53"]
 }
 ```
 

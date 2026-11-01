@@ -22,7 +22,7 @@ Self-hosted photo and video management, running on the MacBook Pro M1 (32GB) in 
 │  Network: homelab (external)                            │
 └─────────────────────────────────────────────────────────┘
          │
-         │ Tailscale (tag:server)
+         │ Tailscale (tag:photos)
          ▼
     Accessible from tailnet only
 ```
@@ -139,6 +139,6 @@ Automate this with a launchd plist or cron job. The sync only works while the vo
 
 ## Network access
 
-Immich is reachable only via Tailscale. The MacBook runs Tailscale with `--advertise-tags=tag:server`, and ACLs restrict access to tailnet members. There is no port exposed to the LAN beyond what Tailscale tunnels.
+Immich is reachable only via Tailscale. The MacBook runs Tailscale with `--advertise-tags=tag:photos`, and the tailnet policy decides who can reach it. There is no port exposed to the LAN beyond what Tailscale tunnels.
 
 See [macbook-clamshell-server.md](macbook-clamshell-server.md) for hardware setup, power management, battery health (AlDente), and remote access details.

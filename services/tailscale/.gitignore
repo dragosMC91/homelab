@@ -3,3 +3,6 @@ data/*
 !data/.gitkeep
 
 .env
+
+# Tailnet policy exports (contain account emails)
+*.hujson

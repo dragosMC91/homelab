@@ -1,0 +1,9 @@
+# gitleaks config: built-in rules plus the secrets this homelab actually uses.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "tailscale-key"
+description = "Tailscale auth, API or OAuth key"
+regex = '''tskey-(?:auth|api|client|webhook)-[A-Za-z0-9]+-[A-Za-z0-9]+'''
+keywords = ["tskey-"]

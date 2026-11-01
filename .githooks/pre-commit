@@ -1,0 +1,5 @@
+#!/bin/sh
+# Blocks commits that contain anything shaped like a secret (auth keys, tokens, passwords).
+# Enabled per clone by `make setup` (git config core.hooksPath .githooks).
+command -v gitleaks >/dev/null || { echo "gitleaks not installed, skipping secret scan" >&2; exit 0; }
+exec gitleaks git --staged --redact

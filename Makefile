@@ -19,7 +19,7 @@ SERVICES_DIR = services
 # Auto-discover services (each subdirectory under services/)
 SERVICES := $(notdir $(patsubst %/,%,$(wildcard $(SERVICES_DIR)/*/)))
 
-.PHONY: help setup network check-env-files up down restart pull status clean $(foreach s,$(SERVICES),up-$(s) down-$(s) restart-$(s) logs-$(s) pull-$(s))
+.PHONY: help setup network hooks check-env-files up down restart pull status clean $(foreach s,$(SERVICES),up-$(s) down-$(s) restart-$(s) logs-$(s) pull-$(s))
 
 help:
 	@echo ""
@@ -41,8 +41,12 @@ help:
 # Setup
 # --------------------------------------------------
 
-setup: network env-files ## First-time setup: create network and .env files
+setup: network env-files hooks ## First-time setup: create network, .env files and git hooks
 	@echo "Setup complete. Review .env files in each service directory, then run: make up"
+
+hooks: ## Enable the repo's git hooks (gitleaks secret scan on commit)
+	@git config core.hooksPath .githooks
+	@echo "Git hooks enabled (.githooks). Install gitleaks to activate the secret scan."
 
 network: ## Create the shared homelab Docker network
 	@docker network inspect homelab >/dev/null 2>&1 || docker network create homelab

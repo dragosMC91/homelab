@@ -162,12 +162,13 @@ OrbStack ships with `docker` and `docker compose` CLIs.
 ### 2. Clone and set up
 
 ```bash
+brew install gitleaks          # secret scanner the git hooks need (Linux: apt install gitleaks)
 git clone https://github.com/<your-username>/homelab.git
 cd homelab
 make setup
 ```
 
-This creates the shared Docker network and copies `.env.example` to `.env` in each service directory.
+This creates the shared Docker network, copies `.env.example` to `.env` in each service directory, and turns on the repo's git hooks. The hooks scan every commit and push for secrets with gitleaks, and refuse to run without it.
 
 ### 3. Configure
 
@@ -367,7 +368,7 @@ make up-uptime-kuma
 
 ## Security
 
-Hardening measures in place (network edge, Tailscale, SSH, app auth, pinned images, secret scanning) and how to verify each are logged in [docs/security.md](docs/security.md). Run `make setup` (or `make hooks`) on every clone you commit from to enable the gitleaks pre-commit hook.
+Hardening measures in place (network edge, Tailscale, SSH, app auth, pinned images, secret scanning) and how to verify each are logged in [docs/security.md](docs/security.md). On every clone you commit from, install gitleaks and run `make setup` (or `make hooks`). That turns on two git hooks: `pre-commit` scans staged changes, and `pre-push` scans every commit being pushed, including ones made with `--no-verify`. Both fail with an explicit error if gitleaks is missing.
 
 ## Maintenance
 

@@ -20,7 +20,7 @@ make status             # Show running containers
 - Persistent data in `data/` per service (git-ignored, `data/.gitkeep` tracked).
 - Prefers LinuxServer.io images (`lscr.io/linuxserver/*`) with `PUID`/`PGID`.
 - Compose conventions: `restart: unless-stopped`, `no-new-privileges`, JSON-file logging with rotation, healthchecks, resource limits, `com.homelab.*` labels.
-- Security: log every hardening change in `docs/security.md` (measure, scope, commit/date, verify command). The repo is public — never add secrets, public IPs, or known-open weaknesses there.
+- Security: log every hardening change in `docs/security.md` (measure, scope, commit/date, verify command). The repo is public — no committed file may contain secrets, account emails, tailnet policy exports, public IPs, or known-open weaknesses. Private LAN (`192.168.50.x`) and tailnet (`100.x`) addresses are fine.
 
 ## Adding a Service
 

@@ -1,0 +1,20 @@
+#!/bin/sh
+# Scans the commits being pushed for anything shaped like a secret, including
+# commits made with `git commit --no-verify`. Enabled by `make hooks`.
+# $1 is the remote name (or URL); only commits already on that remote are skipped.
+command -v gitleaks >/dev/null || {
+    echo "gitleaks is not installed, so this push can't be scanned for secrets." >&2
+    echo "Install it (brew install gitleaks, or apt install gitleaks), or skip once with git push --no-verify." >&2
+    exit 1
+}
+
+zero=$(git hash-object --stdin </dev/null | tr '0-9a-f' '0')
+while read -r local_ref local_sha remote_ref remote_sha; do
+    [ "$local_sha" = "$zero" ] && continue                 # deleting a remote branch
+    if [ "$remote_sha" = "$zero" ]; then
+        range="$local_sha --not --remotes=$1"               # new branch: commits the destination doesn't have
+    else
+        range="$remote_sha..$local_sha"
+    fi
+    gitleaks git --redact --no-banner --log-opts="$range" </dev/null || exit 1
+done

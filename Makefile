@@ -44,9 +44,9 @@ help:
 setup: network env-files hooks ## First-time setup: create network, .env files and git hooks
 	@echo "Setup complete. Review .env files in each service directory, then run: make up"
 
-hooks: ## Enable the repo's git hooks (gitleaks secret scan on commit)
+hooks: ## Enable the repo's git hooks (gitleaks secret scan on commit and push)
 	@git config core.hooksPath .githooks
-	@echo "Git hooks enabled (.githooks). Install gitleaks to activate the secret scan."
+	@echo "Git hooks enabled (.githooks). Commits and pushes are blocked until gitleaks is installed."
 
 network: ## Create the shared homelab Docker network
 	@docker network inspect homelab >/dev/null 2>&1 || docker network create homelab

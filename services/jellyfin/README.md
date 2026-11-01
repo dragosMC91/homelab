@@ -4,7 +4,7 @@
 
 LVM makes this easy to extend later. The volume group `nas-hdd` already exists.
 
-SSH into the Pi 5 (`192.168.55.222`):
+SSH into the Pi 5 (`192.168.50.3`):
 
 ```bash
 # Check available space in the volume group
@@ -38,14 +38,14 @@ sudo lvextend -L +1T /dev/nas-hdd/media && sudo resize2fs /dev/nas-hdd/media
 
 NFS is preferred over Samba for Linux-to-Linux — lower overhead, better performance.
 
-SSH into the Pi 5 (`192.168.55.222`):
+SSH into the Pi 5 (`192.168.50.3`):
 
 ```bash
 # Install NFS server
 sudo apt-get install -y nfs-kernel-server
 
 # Export the media directory to the NUC only
-echo '/mnt/nas-hdd/media 192.168.55.111(rw,sync,no_subtree_check,all_squash,anonuid=1000,anongid=1000)' | sudo tee -a /etc/exports
+echo '/mnt/nas-hdd/media 192.168.50.4(rw,sync,no_subtree_check,all_squash,anonuid=1000,anongid=1000)' | sudo tee -a /etc/exports
 
 # Apply and enable
 sudo exportfs -ra
@@ -54,7 +54,7 @@ sudo systemctl enable --now nfs-kernel-server
 
 ## Step 3 — Mount NFS on the NUC
 
-SSH into the NUC (`192.168.55.111`):
+SSH into the NUC (`192.168.50.4`):
 
 ```bash
 # Install NFS client
@@ -62,10 +62,10 @@ sudo apt-get install -y nfs-common
 
 # Create mount point and mount
 sudo mkdir -p /mnt/nas-media
-sudo mount -t nfs 192.168.55.222:/mnt/nas-hdd/media /mnt/nas-media
+sudo mount -t nfs 192.168.50.3:/mnt/nas-hdd/media /mnt/nas-media
 
 # Make it permanent
-echo '192.168.55.222:/mnt/nas-hdd/media /mnt/nas-media nfs defaults,_netdev,noexec,nosuid,nodev 0 0' | sudo tee -a /etc/fstab
+echo '192.168.50.3:/mnt/nas-hdd/media /mnt/nas-media nfs defaults,_netdev,noexec,nosuid,nodev 0 0' | sudo tee -a /etc/fstab
 
 # Verify
 ls /mnt/nas-media/
@@ -92,7 +92,7 @@ cp services/jellyfin/.env.example services/jellyfin/.env
 make up-jellyfin
 ```
 
-Open <http://192.168.55.111:8096> to run the Jellyfin setup wizard. In the wizard, enable **VA-API hardware transcoding** under Playback settings (device: `/dev/dri/renderD128`).
+Open <http://192.168.50.4:8096> to run the Jellyfin setup wizard. In the wizard, enable **VA-API hardware transcoding** under Playback settings (device: `/dev/dri/renderD128`).
 
 ## Verifying Hardware Transcoding (VA-API)
 

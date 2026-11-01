@@ -20,6 +20,7 @@ make status             # Show running containers
 - Persistent data in `data/` per service (git-ignored, `data/.gitkeep` tracked).
 - Prefers LinuxServer.io images (`lscr.io/linuxserver/*`) with `PUID`/`PGID`.
 - Compose conventions: `restart: unless-stopped`, `no-new-privileges`, JSON-file logging with rotation, healthchecks, resource limits, `com.homelab.*` labels.
+- Security: log every hardening change in `docs/security.md` (measure, scope, commit/date, verify command). The repo is public — never add secrets, public IPs, or known-open weaknesses there.
 
 ## Adding a Service
 
@@ -31,9 +32,9 @@ make status             # Show running containers
 
 | Node | Hostname | IP | Specs |
 |------|----------|----|-------|
-| Intel NUC 8 Pro | `nuc` | `static ip 3` | i3-8145U, 16GB RAM, 512GB SSD, VA-API transcoding |
-| Raspberry Pi 5 | `dragospi5` | `static ip 2` | 4GB RAM, Penta SATA HAT, 8TB HDD + 1TB SSD, SD boot |
-| Raspberry Pi 3B+ | `pi-infra` | `static ip 1` | 1GB RAM |
+| Intel NUC 8 Pro | `nuc` | `192.168.50.4` | i3-8145U, 16GB RAM, 512GB SSD, VA-API transcoding |
+| Raspberry Pi 5 | `dragospi5` | `192.168.50.3` | 4GB RAM, Penta SATA HAT, 8TB HDD + 1TB SSD, SD boot |
+| Raspberry Pi 3B+ | `pi-infra` | `192.168.50.2` | 1GB RAM |
 | Raspberry Pi 3B+ | — | — | 1GB RAM (DNS backup) |
 | Mac Mini 2018 | — | — | i5, 8GB RAM (backup homelab device) |
 | MacBook Pro M1 | — | — | 32GB RAM, runs Immich (OrbStack) |

@@ -100,35 +100,40 @@ Tailscale runs on every node for secure remote access. AdGuard Home is configure
 
 ## Tailscale Auth Key Setup
 
-Tailscale requires an **auth key** (`TS_AUTHKEY`) so each node can join your tailnet without interactive browser login. This is the only secret you need to configure before deploying.
+Each server joins the tailnet once with its own single-use auth key (`TS_AUTHKEY`). After that it stays logged in through its state in `services/tailscale/data/`, and the key is cleared from `.env`.
 
-### Generate a key
+### Generate a key (one per node)
 
 1. Go to [Tailscale Admin > Settings > Keys](https://login.tailscale.com/admin/settings/keys)
 2. Click **Generate auth key...**
 3. Configure these settings:
-   - **Reusable** — enable this so you can use the same key on all nodes instead of generating one per device
-   - **Ephemeral** — enable this so nodes are automatically removed from your tailnet when they go offline for 30+ minutes (useful for containers that get recreated on redeploy)
-   - **Expiry** — set to the maximum (90 days)
+   - **Reusable** — off. The key adds one device, so a leaked `.env` can't add more.
+   - **Expiration** — 1 day. You use it within minutes.
+   - **Ephemeral** — off. Tailscale deletes ephemeral devices soon after they go offline, so a server that is down for a while would drop out of the tailnet and come back with a new IP.
+   - **Tags** — on, with the node's role tag (`tag:dns`, `tag:nas` or `tag:media`). The node joins as that tag, not as your user: it gets its role's rules from the tailnet policy, and its login never expires.
 4. Copy the key (starts with `tskey-auth-`)
 
 ### Use the key
 
-Set `TS_AUTHKEY` in each node's `services/tailscale/.env`:
-
 ```bash
-# Same key works on all nodes (reusable)
+# services/tailscale/.env on the joining node
 TS_AUTHKEY=tskey-auth-kXXXXXXXXXXXXXXXXXX
+make up-tailscale
 ```
 
-You can use the **same reusable key** on every node — no need to generate a separate key per device.
+Once the node appears under Admin > Machines with its tag, clear the key and recreate the container:
+
+```bash
+sed -i 's/^TS_AUTHKEY=.*/TS_AUTHKEY=/' services/tailscale/.env
+make up-tailscale
+docker exec tailscale env | grep TS_AUTHKEY     # TS_AUTHKEY= (empty)
+```
 
 ### Key lifecycle
 
-- The auth key is only used on **first join** (or if `services/tailscale/data/` is wiped). After that, the node authenticates via its stored state in `data/`.
-- Running nodes are **not affected** when a key expires. They keep their connection via the persisted state.
-- When the key expires after 90 days, generate a new one and update the `.env` files. You only need the new key if you're adding a new node or recreating one from scratch.
-- If you delete the `data/` directory, the node will need to re-authenticate with a valid key.
+- The key is used only on **first join** (or after `services/tailscale/data/` is wiped). Restarts and upgrades use the stored state.
+- If `data/` is lost, generate a new key the same way.
+- To re-enroll a node, stop its container and remove it under Machines first, so its name and IP are free. Join with a new key, then restore the old IP under Machines → ⋯ → **Edit machine IPv4**. Other config points at these IPs: the tailnet DNS nameserver, `TAILSCALE_IP` (FileBrowser) and `ADGUARD_BIND_IP`.
 
 ## Prerequisites
 
@@ -230,7 +235,7 @@ Assign a static IP to the NUC via your router's DHCP reservation (bind the NUC's
 ```bash
 # Set Tailscale auth key and hostname
 nano services/tailscale/.env
-# TS_AUTHKEY=tskey-auth-...
+# TS_AUTHKEY=tskey-auth-...   (single-use tagged key, see Tailscale Auth Key Setup)
 # TS_HOSTNAME=nuc
 
 # Start services
@@ -314,7 +319,7 @@ sudo reboot
 ```bash
 # Set Tailscale auth key and hostname
 nano services/tailscale/.env
-# TS_AUTHKEY=tskey-auth-...
+# TS_AUTHKEY=tskey-auth-...   (single-use tagged key, see Tailscale Auth Key Setup)
 # TS_HOSTNAME=pi-infra
 
 # Start Tailscale first, then AdGuard Home

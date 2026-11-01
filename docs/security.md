@@ -20,6 +20,7 @@ If the ISP ever assigns a public IPv4 or IPv6 is enabled, re-check the above and
 | FileBrowser and Samba accept tailnet clients only | `dragospi5` | `ea5563b`, `2f55dc6` | `docker ps` shows FileBrowser on the Tailscale IP; `sudo testparm -s \| grep 'hosts allow'` |
 | Role tags instead of one shared server tag: `tag:dns` (pi-infra), `tag:nas` (dragospi5), `tag:media` (nuc), `tag:photos` (M1). Servers reach each other only for DNS | Tailnet policy | 2026-11-01 | Admin console → Machines shows the role tag on each server |
 | Family reaches only Samba, FileBrowser, Seerr, Jellyfin and DNS; no SSH, arr apps or admin pages. Policy tests reject any edit that breaks this | Tailnet policy | 2026-11-01 | Admin console → Access controls saves without test failures |
+| Servers joined with single-use, tagged, non-ephemeral keys (1-day expiry); no auth key left in any `.env`; tagged logins never expire | `nuc`, `dragospi5`, `pi-infra` | 2026-11-01 | `docker exec tailscale env \| grep TS_AUTHKEY` → empty; admin console → Keys is empty and Machines shows no Ephemeral badge |
 | No exit node or Tailscale SSH on servers: `TS_EXTRA_ARGS=--reset`, so any flag not listed is off after a restart | `nuc`, `dragospi5`, `pi-infra` | 2026-11-01 | `docker exec tailscale tailscale debug prefs \| grep -A2 -E '"RunSSH"\|"AdvertiseRoutes"'` → `false`, `null` |
 
 ## SSH

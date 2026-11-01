@@ -2,7 +2,7 @@ services:
   filebrowser:
     # FileBrowser Quantum — migrated from filebrowser/filebrowser (archived
     # upstream 2026-09-01 with unpatched vulns). Config: ./config.yaml.
-    image: ghcr.io/gtsteffaniak/filebrowser:1.5.6-stable
+    image: ghcr.io/gtsteffaniak/filebrowser:1.5.8-stable
     container_name: filebrowser
     restart: unless-stopped
 

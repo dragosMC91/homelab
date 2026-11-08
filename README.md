@@ -82,7 +82,7 @@ Each service is fully self-contained in its own directory with its own compose f
 | **Jellyfin** | Media streaming server (HW transcoding) | `8096` (Web UI), `7359/udp` (discovery) | `nuc` | [jellyfin](services/jellyfin/) |
 | **Immich** | Self-hosted photo & video management | `2283` (Web UI) | MacBook Pro M1 | [immich](services/immich/) |
 | **Filebrowser** | Web-based file manager (Tailscale-only) | `8082` | `dragospi5` | [filebrowser](services/filebrowser/) |
-| ***arr* stack** | Prowlarr, Radarr, Sonarr, Seerr, qBittorrent | `9696`, `7878`, `8989`, `5055`, `8083` | `dragospi5` | [arr-stack](services/arr-stack/) |
+| ***arr* stack** | Prowlarr, Radarr, Sonarr, Bazarr, Seerr, qBittorrent | `9696`, `7878`, `8989`, `6767`, `5055`, `8083` | `dragospi5` | [arr-stack](services/arr-stack/) |
 | **Uptime Kuma** | Uptime monitoring dashboard | `3001` (Web UI) | `nuc` | [uptime-kuma](services/uptime-kuma/) |
 
 ## Hosts

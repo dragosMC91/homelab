@@ -10,7 +10,7 @@ Jellyseerr (request UI) → Radarr/Sonarr → Prowlarr (finds torrents) → qBit
                     hardlinks completed downloads from         /media/downloads/{movies,tv-shows}
                                ↓                                              ↓
                     /media/movies  /media/tv-shows  ←── same filesystem, instant hardlinks
-                               ↓
+                               ↓             ↖── Bazarr adds .srt subtitles next to each video
                     Jellyfin (NUC) reads via NFS
 ```
 
@@ -25,6 +25,7 @@ All containers mount `/mnt/nas-hdd/media` as `/media`, so downloads and library 
 | Prowlarr | 9696 | Indexer manager — syncs torrent sources to Radarr/Sonarr |
 | Radarr | 7878 | Movie automation |
 | Sonarr | 8989 | TV show automation |
+| Bazarr | 6767 | Subtitle automation — fetches and syncs subtitles for everything Radarr/Sonarr import |
 
 ## Prerequisites
 
@@ -140,6 +141,41 @@ Open <http://192.168.50.3:5055>.
    - Root folder: `/media/tv-shows`
    - Quality profile: select your preferred profile
 
+## Step 8 — Configure Bazarr
+
+Open <http://192.168.50.3:6767>. Bazarr mounts `/media` at the same path as Radarr and Sonarr, so no path mappings are needed.
+
+1. **Turn on login first**: Settings > General > Security > Authentication **Form**, set a username and password, Save. Bazarr ships with no authentication.
+2. **Jobs**: Settings > General > Jobs Manager > **Concurrent Jobs** `1`. The default (4 on a Pi 5) runs four searches or syncs at once, each reading video from the single HDD.
+3. **Languages**: Settings > Languages
+   - **Selection** tab > **Languages Filter**: add English. Leave **Single Language** off, so files are saved as `<video>.en.srt` and Jellyfin labels the track English
+   - **Profiles** tab: add an `English` profile with English, Subtitles Type **Normal or hearing-impaired**
+   - **Default Language Profiles For Newly Added Shows**: enable **Series** and **Movies** and select the profile for each, so new imports get subtitles automatically
+4. **Providers**: Settings > Providers — add several, so one provider's daily limit or outage doesn't stall searches:
+   - **OpenSubtitles.com** — free account (enter the username, not the email); the free tier caps daily downloads
+   - **SubDL** — free account; generate an API key in its profile settings
+   - **Gestdown (Addic7ed proxy)** — TV shows, no account needed
+   - **YIFY Subtitles** — movies, no account needed
+5. **Embedded subtitles**: Settings > Subtitles > Files — keep **Treat Embedded Subtitles as Downloaded** on (text tracks inside the file already count), and enable **Ignore Embedded PGS Subtitles** and **Ignore Embedded VobSub Subtitles**. Those are images: Jellyfin must burn them into the video, which forces a transcode, so Bazarr should fetch a text `.srt` instead.
+6. **Search**: Settings > Subtitles > Search — keep the defaults (minimum score 90% episodes / 70% movies, Adaptive Searching on) and turn off **Upgrade Manually Downloaded or Translated Subtitles**, so subtitles you picked by hand are not replaced.
+7. **Sonarr**: Settings > Library > Sonarr > Enabled
+   - Address: `sonarr`, Port: `8989`
+   - API key: copy from Sonarr (Settings > General > API Key)
+   - Test, then Save
+8. **Radarr**: Settings > Library > Radarr > Enabled
+   - Address: `radarr`, Port: `7878`
+   - API key: copy from Radarr (Settings > General > API Key)
+   - Test, then Save
+9. **Jellyfin**: Settings > Integrations > Jellyfin > Enabled
+   - Server URL: `http://192.168.50.4:8096`
+   - API Key: create one in Jellyfin (Dashboard > API Keys)
+   - Click **Test Connection** (the library pickers appear only after it succeeds), then select the movie and series libraries, enable the metadata refresh for both, and keep the notify method **Immediate**
+   - Jellyfin reads the media over NFS, which gives it no file-change notifications, so without this new subtitles only appear after its next scheduled library scan
+10. **Existing library**: Series and Movies list everything Sonarr and Radarr know about. Select > select all matching the filter > **Change Profile** > pick the profile > Save, so titles imported before Bazarr also get subtitles.
+11. **Sync (after the backfill)**: leave automatic sync off while Bazarr works through the existing library. Once the queue settles, enable Settings > Subtitles > Processing > Audio Synchronization > **Enable Automatic Subtitles Audio Synchronization** with **Series Score Threshold For Audio Sync** `96` and **Movies Score Threshold For Audio Sync** `86`. Bazarr syncs only subtitles scoring at or below the threshold, and the defaults (90/70) equal the minimum download scores, so at the defaults almost nothing gets synced; higher thresholds sync the lower-scored, likely mistimed downloads and skip near-perfect matches. Each sync decodes the video's audio; the container is capped at two cores. A single mistimed subtitle can be synced by hand from the title's page at any time.
+
+If you keep Jellyfin's OpenSubtitles plugin for manual searches, give it a different OpenSubtitles account than Bazarr, since both draw on the same daily download limit.
+
 ## Troubleshooting
 
 ### "Directory does not appear to exist inside the container"
@@ -160,7 +196,7 @@ Some public indexers use Cloudflare protection. Options:
 
 ### Container connectivity
 
-All services are on the `homelab` Docker network and can reach each other by container name (e.g. `qbittorrent`, `prowlarr`, `radarr`, `sonarr`). If a service can't connect to another, verify they're all on the same network:
+All services are on the `homelab` Docker network and can reach each other by container name (e.g. `qbittorrent`, `prowlarr`, `radarr`, `sonarr`, `bazarr`). If a service can't connect to another, verify they're all on the same network:
 
 ```bash
 docker network inspect homelab

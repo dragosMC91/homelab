@@ -152,7 +152,7 @@ Open <http://192.168.50.3:6767>. Bazarr mounts `/media` at the same path as Rada
    - **Profiles** tab: add an `English` profile with English, Subtitles Type **Normal or hearing-impaired**
    - **Default Language Profiles For Newly Added Shows**: enable **Series** and **Movies** and select the profile for each, so new imports get subtitles automatically
 4. **Providers**: Settings > Providers — add several, so one provider's daily limit or outage doesn't stall searches:
-   - **OpenSubtitles.com** — free account (enter the username, not the email); the free tier caps daily downloads
+   - **OpenSubtitles.com** — free account registered at opensubtitles.com, not the older opensubtitles.org (its accounts fail with AuthenticationError). Enter the username, not the email; the free tier caps daily downloads
    - **SubDL** — free account; generate an API key in its profile settings
    - **Gestdown (Addic7ed proxy)** — TV shows, no account needed
    - **YIFY Subtitles** — movies, no account needed

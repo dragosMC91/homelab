@@ -181,6 +181,56 @@ services:
     networks:
       - homelab
 
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:v1.6.2-ls371
+    container_name: bazarr
+    restart: unless-stopped
+
+    ports:
+      - "${BAZARR_PORT:-6767}:6767"
+
+    volumes:
+      - ./data/bazarr:/config
+      # Same /media path as Radarr/Sonarr, so no path mappings are needed.
+      # Read-write: subtitles are saved next to the video files.
+      - ${MEDIA_ROOT:-/mnt/nas-hdd/media}:/media
+
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-Europe/Bucharest}
+
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:6767/api/system/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    deploy:
+      resources:
+        limits:
+          # Subtitle sync (ffsubsync) decodes audio and is CPU-heavy. Caps total
+          # CPU use at two cores' worth so Samba and NFS keep headroom.
+          memory: 1g
+          cpus: "2.0"
+
+    labels:
+      - "com.homelab.service=bazarr"
+      - "com.homelab.description=Subtitle Management"
+
+    networks:
+      - homelab
+
   seerr:
     image: ghcr.io/seerr-team/seerr:v3.5.1
     container_name: seerr

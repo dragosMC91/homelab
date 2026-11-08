@@ -145,8 +145,8 @@ Open <http://192.168.50.3:5055>.
 
 Open <http://192.168.50.3:6767>. Bazarr mounts `/media` at the same path as Radarr and Sonarr, so no path mappings are needed.
 
-1. **Turn on login first**: Settings > General > Security > Authentication **Form**, set a username and password, Save. Bazarr ships with no authentication.
-2. **Jobs**: Settings > General > Jobs Manager > **Concurrent Jobs** `1`. The default (4 on a Pi 5) runs four searches or syncs at once, each reading video from the single HDD.
+1. **Turn on login first**: Settings > Application > General tab, scroll to Security > Authentication **Form**, set a username and password, Save. Bazarr ships with no authentication.
+2. **Jobs**: Settings > Application > General tab > Jobs Manager > **Concurrent Jobs** `1`. The default (4 on a Pi 5) runs four searches or syncs at once, each reading video from the single HDD.
 3. **Languages**: Settings > Languages
    - **Selection** tab > **Languages Filter**: add English. Leave **Single Language** off, so files are saved as `<video>.en.srt` and Jellyfin labels the track English
    - **Profiles** tab: add an `English` profile with English, Subtitles Type **Normal or hearing-impaired**

@@ -46,6 +46,7 @@ PermitRootLogin no
 | Measure | Scope | Since | Verify |
 |---|---|---|---|
 | Sonarr, Radarr, Prowlarr require login for every address (`AuthenticationRequired=Enabled`) | arr-stack | 2026-11-01 | `grep -h AuthenticationRequired services/arr-stack/data/{sonarr,radarr,prowlarr}/config.xml` |
+| Bazarr requires Form login; logged-out page loads get no API key | arr-stack | 2026-11-08 | `curl -s http://192.168.50.3:6767/ \| grep -c apiKey` → `0`; a private browser window shows the login page |
 | qBittorrent: no auth bypass for localhost or subnets; UPnP off | arr-stack | 2026-11-01 | Tools → Options → Web UI and Connection |
 | Images pinned to exact versions at or above current security fixes | All services | `3ccc50f`, `ccee318` | `grep -hn 'image:' services/*/docker-compose.yml` |
 | Samba: SMB3.11 minimum, encryption and signing mandatory | `dragospi5` | `2f55dc6` | `sudo testparm -s \| grep -E 'min protocol\|smb encrypt\|signing'` |

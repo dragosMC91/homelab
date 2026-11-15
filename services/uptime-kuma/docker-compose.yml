@@ -5,7 +5,8 @@ services:
     restart: unless-stopped
 
     ports:
-      - "${UPTIME_KUMA_PORT:-3001}:3001/tcp"
+      # Web UI publishes on the Tailscale IP only
+      - "${TAILSCALE_IP:?Set TAILSCALE_IP in .env}:${UPTIME_KUMA_PORT:-3001}:3001/tcp"
 
     volumes:
       - ./data:/app/data

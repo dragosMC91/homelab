@@ -9,12 +9,10 @@ services:
       - "${HOST_DNS_PORT:-53}:53/tcp"
       - "${HOST_DNS_PORT:-53}:53/udp"
 
-      # Setup wizard — open by default for first-time setup.
-      # After setup, set ADGUARD_BIND_IP=127.0.0.1 in .env to lock it down.
-      - "${ADGUARD_BIND_IP:-0.0.0.0}:3000:3000/tcp"
-      # Admin UI — after setup, set ADGUARD_BIND_IP to your Tailscale IP to
-      # restrict access to the VPN (see .env.example).
-      - "${ADGUARD_BIND_IP:-0.0.0.0}:8080:80/tcp"
+      # Setup wizard (3000) and admin UI (8080) publish on the Tailscale IP
+      # only (see .env.example).
+      - "${ADGUARD_BIND_IP:?Set ADGUARD_BIND_IP to the Tailscale IP in .env}:3000:3000/tcp"
+      - "${ADGUARD_BIND_IP:?Set ADGUARD_BIND_IP to the Tailscale IP in .env}:8080:80/tcp"
 
     volumes:
       - ./data/work:/opt/adguardhome/work

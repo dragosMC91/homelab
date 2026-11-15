@@ -133,7 +133,7 @@ docker exec tailscale env | grep TS_AUTHKEY     # TS_AUTHKEY= (empty)
 
 - The key is used only on **first join** (or after `services/tailscale/data/` is wiped). Restarts and upgrades use the stored state.
 - If `data/` is lost, generate a new key the same way.
-- To re-enroll a node, stop its container and remove it under Machines first, so its name and IP are free. Join with a new key, then restore the old IP under Machines → ⋯ → **Edit machine IPv4**. Other config points at these IPs: the tailnet DNS nameserver, `TAILSCALE_IP` (FileBrowser) and `ADGUARD_BIND_IP`.
+- To re-enroll a node, stop its container and remove it under Machines first, so its name and IP are free. Join with a new key, then restore the old IP under Machines → ⋯ → **Edit machine IPv4**. Other config points at these IPs: the tailnet DNS nameserver, `TAILSCALE_IP` (FileBrowser, arr stack, Uptime Kuma) and `ADGUARD_BIND_IP`.
 
 ## Prerequisites
 
@@ -176,6 +176,7 @@ Edit the `.env` file in each service directory you want to run. At minimum:
 
 - **Tailscale**: set `TS_AUTHKEY` in `services/tailscale/.env` (get a key from [Tailscale Admin](https://login.tailscale.com/admin/settings/keys))
 - **AdGuard Home**: set `HOST_DNS_PORT=5353` in `services/adguard-home/.env` (macOS mDNSResponder occupies port 53)
+- **Web UIs**: set `TAILSCALE_IP` in the arr-stack, Uptime Kuma and FileBrowser `.env` files, and `ADGUARD_BIND_IP` in AdGuard's, to this host's Tailscale IP (`tailscale ip -4`). These services refuse to start without it, because their web UIs publish on Tailscale only
 
 ### 4. Start services
 
@@ -239,8 +240,9 @@ nano services/tailscale/.env
 # TS_AUTHKEY=tskey-auth-...   (single-use tagged key, see Tailscale Auth Key Setup)
 # TS_HOSTNAME=nuc
 
-# Start services
+# Start Tailscale, then bind Uptime Kuma to this node's tailnet IP
 make up-tailscale
+docker exec tailscale tailscale ip -4    # set as TAILSCALE_IP in services/uptime-kuma/.env
 make up-uptime-kuma
 make up-jellyfin       # Once Jellyfin service is added
 ```
@@ -323,14 +325,15 @@ nano services/tailscale/.env
 # TS_AUTHKEY=tskey-auth-...   (single-use tagged key, see Tailscale Auth Key Setup)
 # TS_HOSTNAME=pi-infra
 
-# Start Tailscale first, then AdGuard Home
+# Start Tailscale first, then bind AdGuard's admin pages to this node's tailnet IP
 make up-tailscale
+docker exec tailscale tailscale ip -4    # set as ADGUARD_BIND_IP in services/adguard-home/.env
 make up-adguard-home
 ```
 
 ### 7. Configure AdGuard Home
 
-Open `http://pi-infra.local:3000` in your browser and complete the setup wizard.
+From a device on your tailnet, open `http://<pi-tailscale-ip>:3000` and complete the setup wizard.
 
 ### 8. Keep the router on public DNS
 

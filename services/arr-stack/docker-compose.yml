@@ -5,7 +5,8 @@ services:
     restart: unless-stopped
 
     ports:
-      - "${QBIT_PORT:-8083}:8083"
+      # Web UI publishes on the Tailscale IP only
+      - "${TAILSCALE_IP:?Set TAILSCALE_IP in .env}:${QBIT_PORT:-8083}:8083"
       - "6881:6881"
       - "6881:6881/udp"
 
@@ -53,7 +54,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "${PROWLARR_PORT:-9696}:9696"
+      - "${TAILSCALE_IP:?Set TAILSCALE_IP in .env}:${PROWLARR_PORT:-9696}:9696"
 
     volumes:
       - ./data/prowlarr:/config
@@ -97,7 +98,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "${RADARR_PORT:-7878}:7878"
+      - "${TAILSCALE_IP:?Set TAILSCALE_IP in .env}:${RADARR_PORT:-7878}:7878"
 
     volumes:
       - ./data/radarr:/config
@@ -142,7 +143,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "${SONARR_PORT:-8989}:8989"
+      - "${TAILSCALE_IP:?Set TAILSCALE_IP in .env}:${SONARR_PORT:-8989}:8989"
 
     volumes:
       - ./data/sonarr:/config
@@ -187,7 +188,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "${BAZARR_PORT:-6767}:6767"
+      - "${TAILSCALE_IP:?Set TAILSCALE_IP in .env}:${BAZARR_PORT:-6767}:6767"
 
     volumes:
       - ./data/bazarr:/config

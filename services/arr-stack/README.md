@@ -55,12 +55,15 @@ chown -R 1000:1000 /mnt/nas-hdd/media/downloads
 ```bash
 cd ~/homelab/services/arr-stack
 cp .env.example .env
+docker exec tailscale tailscale ip -4    # set as TAILSCALE_IP in .env
 make up-arr-stack
 ```
 
+The qBittorrent, Prowlarr, Radarr, Sonarr and Bazarr web UIs publish on the Pi's Tailscale IP only, so open them from a device on your tailnet.
+
 ## Step 3 — Configure qBittorrent
 
-Open <http://192.168.50.3:8083>.
+Open `http://<pi-tailscale-ip>:8083`.
 
 1. Check container logs for the temporary admin password: `docker logs qbittorrent`
 2. Log in and change the admin password under **Tools > Options > Web UI**
@@ -83,7 +86,7 @@ Open <http://192.168.50.3:8083>.
 
 ## Step 4 — Configure Prowlarr
 
-Open <http://192.168.50.3:9696>.
+Open `http://<pi-tailscale-ip>:9696`.
 
 1. Set up authentication (username/password) when prompted
 2. **Add indexers**: Settings > Indexers > Add Indexer — search and add your preferred torrent indexers
@@ -101,7 +104,7 @@ This auto-syncs all your indexers to both Radarr and Sonarr.
 
 ## Step 5 — Configure Radarr
 
-Open <http://192.168.50.3:7878>.
+Open `http://<pi-tailscale-ip>:7878`.
 
 1. Set up authentication when prompted
 2. **Add download client**: Settings > Download Clients > Add > qBittorrent
@@ -113,7 +116,7 @@ Open <http://192.168.50.3:7878>.
 
 ## Step 6 — Configure Sonarr
 
-Open <http://192.168.50.3:8989>.
+Open `http://<pi-tailscale-ip>:8989`.
 
 1. Set up authentication when prompted
 2. **Add download client**: Settings > Download Clients > Add > qBittorrent
@@ -143,7 +146,7 @@ Open <http://192.168.50.3:5055>.
 
 ## Step 8 — Configure Bazarr
 
-Open <http://192.168.50.3:6767>. Bazarr mounts `/media` at the same path as Radarr and Sonarr, so no path mappings are needed.
+Open `http://<pi-tailscale-ip>:6767`. Bazarr mounts `/media` at the same path as Radarr and Sonarr, so no path mappings are needed.
 
 1. **Turn on login first**: Settings > Application > General tab, scroll to Security > Authentication **Form**, set a username and password, Save. Bazarr ships with no authentication.
 2. **Jobs**: Settings > Application > General tab > Jobs Manager > **Concurrent Jobs** `1`. The default (4 on a Pi 5) runs four searches or syncs at once, each reading video from the single HDD.

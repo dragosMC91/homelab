@@ -30,10 +30,16 @@ If the ISP ever assigns a public IPv4 or IPv6 is enabled, re-check the above and
 
 Run on each node that publishes a web UI on its Tailscale IP. Connect over the LAN IP. Every block is one command.
 
-1. Let containers bind the Tailscale IP before `tailscale0` exists at boot:
+1. Let containers bind the Tailscale IP before `tailscale0` exists at boot. Without this, a container that publishes on the Tailscale IP fails to start after a reboot with `cannot assign requested address`, and all its other ports stay down too (on a DNS node, that includes port 53):
 
    ```bash
    echo 'net.ipv4.ip_nonlocal_bind=1' | sudo tee /etc/sysctl.d/99-nonlocal-bind.conf && sudo sysctl --system
+   ```
+
+   Confirm it prints `= 1` (`sysctl` needs `sudo` on Raspberry Pi OS, where `/usr/sbin` is not on a user's `PATH`):
+
+   ```bash
+   sudo sysctl net.ipv4.ip_nonlocal_bind
    ```
 
 2. Read the node's Tailscale IP. It must print a `100.x` address before you go on:

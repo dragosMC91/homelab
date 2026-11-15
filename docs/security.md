@@ -90,7 +90,7 @@ Run on each node that publishes a web UI on its Tailscale IP. Connect over the L
 
 8. Reboot once and repeat step 6. The rule must be back without adding it by hand.
 
-If a node's Tailscale IP changes, update its `.env` values and repeat steps 4 and 5.
+If a node's Tailscale IP changes, update its `.env` values, delete the old rule (the step 4 command with `-D` in place of `-I` and the old address), and repeat steps 4 and 5.
 
 If Tailscale is down on a node, reach a web UI through an SSH tunnel to its container: get the address with `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' sonarr`, run `ssh -L 8989:<container-ip>:8989 <user>@192.168.50.3`, then open `http://localhost:8989`.
 

@@ -59,7 +59,7 @@ docker exec tailscale tailscale ip -4    # set as TAILSCALE_IP in .env
 make up-arr-stack
 ```
 
-The qBittorrent, Prowlarr, Radarr, Sonarr and Bazarr web UIs publish on the Pi's Tailscale IP only, so open them from a device on your tailnet.
+The qBittorrent, Prowlarr, Radarr, Sonarr and Bazarr web UIs publish on the Pi's Tailscale IP only, so open them from a device on your tailnet. On a new node, do the one-time steps in [docs/security.md](../../docs/security.md#tailscale-only-web-uis-setup-per-node) first (sysctl and firewall rule); without the sysctl these containers stay down after a reboot.
 
 ## Step 3 — Configure qBittorrent
 

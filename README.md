@@ -77,13 +77,13 @@ Each service is fully self-contained in its own directory with its own compose f
 
 | Service | Description | Ports | Host | Docs |
 |---------|-------------|-------|------|------|
-| **AdGuard Home** | Network-wide DNS ad blocker | `53` (DNS) / `5353` (macOS), `3000` (Web UI) | `pi-infra` | [adguard-home](services/adguard-home/) |
+| **AdGuard Home** | Network-wide DNS ad blocker (web UI Tailscale-only) | `53` (DNS) / `5353` (macOS), `3000` (Web UI) | `pi-infra` | [adguard-home](services/adguard-home/) |
 | **Tailscale** | Mesh VPN / secure remote access | Host networking | All nodes | [tailscale](services/tailscale/) |
 | **Jellyfin** | Media streaming server (HW transcoding) | `8096` (Web UI), `7359/udp` (discovery) | `nuc` | [jellyfin](services/jellyfin/) |
 | **Immich** | Self-hosted photo & video management | `2283` (Web UI) | MacBook Pro M1 | [immich](services/immich/) |
 | **Filebrowser** | Web-based file manager (Tailscale-only) | `8082` | `dragospi5` | [filebrowser](services/filebrowser/) |
-| ***arr* stack** | Prowlarr, Radarr, Sonarr, Bazarr, Seerr, qBittorrent | `9696`, `7878`, `8989`, `6767`, `5055`, `8083` | `dragospi5` | [arr-stack](services/arr-stack/) |
-| **Uptime Kuma** | Uptime monitoring dashboard | `3001` (Web UI) | `nuc` | [uptime-kuma](services/uptime-kuma/) |
+| ***arr* stack** | Prowlarr, Radarr, Sonarr, Bazarr, Seerr, qBittorrent (admin web UIs Tailscale-only) | `9696`, `7878`, `8989`, `6767`, `5055`, `8083` | `dragospi5` | [arr-stack](services/arr-stack/) |
+| **Uptime Kuma** | Uptime monitoring dashboard (Tailscale-only) | `3001` (Web UI) | `nuc` | [uptime-kuma](services/uptime-kuma/) |
 
 ## Hosts
 
@@ -133,7 +133,7 @@ docker exec tailscale env | grep TS_AUTHKEY     # TS_AUTHKEY= (empty)
 
 - The key is used only on **first join** (or after `services/tailscale/data/` is wiped). Restarts and upgrades use the stored state.
 - If `data/` is lost, generate a new key the same way.
-- To re-enroll a node, stop its container and remove it under Machines first, so its name and IP are free. Join with a new key, then restore the old IP under Machines → ⋯ → **Edit machine IPv4**. Other config points at these IPs: the tailnet DNS nameserver, `TAILSCALE_IP` (FileBrowser, arr stack, Uptime Kuma) and `ADGUARD_BIND_IP`.
+- To re-enroll a node, stop its container and remove it under Machines first, so its name and IP are free. Join with a new key, then restore the old IP under Machines → ⋯ → **Edit machine IPv4**. Other config points at these IPs: the tailnet DNS nameserver, `TAILSCALE_IP` (FileBrowser, arr stack, Uptime Kuma), `ADGUARD_BIND_IP` and the node's firewall rule ([docs/security.md](docs/security.md#tailscale-only-web-uis-setup-per-node)).
 
 ## Prerequisites
 
@@ -247,6 +247,8 @@ make up-uptime-kuma
 make up-jellyfin       # Once Jellyfin service is added
 ```
 
+The first time a node runs a service that publishes on its Tailscale IP, do the one-time node steps in [docs/security.md](docs/security.md#tailscale-only-web-uis-setup-per-node) before `make up-<svc>`: a sysctl and a firewall rule. Without the sysctl, those containers stay down after a reboot.
+
 ## Quickstart (Raspberry Pi 3B+ — pi-infra)
 
 This is the first node to deploy. It runs AdGuard Home (DNS ad-blocker) and Tailscale (VPN).
@@ -330,6 +332,8 @@ make up-tailscale
 docker exec tailscale tailscale ip -4    # set as ADGUARD_BIND_IP in services/adguard-home/.env
 make up-adguard-home
 ```
+
+The first time a node runs a service that publishes on its Tailscale IP, do the one-time node steps in [docs/security.md](docs/security.md#tailscale-only-web-uis-setup-per-node) before `make up-<svc>`: a sysctl and a firewall rule. Without the sysctl, AdGuard, DNS included, stays down after a reboot.
 
 ### 7. Configure AdGuard Home
 
@@ -417,15 +421,31 @@ uname -r          # running
 ls /lib/modules   # installed — if a newer version is listed, reboot
 ```
 
-Before rebooting a Pi, confirm the boot partition is consistent (a mismatch here leaves the Pi unreachable at an `(initramfs)` shell):
+Before rebooting a Pi, confirm the boot partition is consistent (a mismatch here leaves the Pi unreachable at an `(initramfs)` shell). The boot files are `kernel_2712.img` and `initramfs_2712` on the Pi 5, and `kernel8.img` and `initramfs8` on a Pi 3B+. The commands below use the Pi 5 names:
 
 ```bash
-grep -n '^initramfs' /boot/firmware/config.txt            # must be empty — auto_initramfs=1 handles it
-ls /lib/modules                                            # installed kernel version(s)
-lsinitramfs /boot/firmware/initramfs* | grep -m1 -oE 'lib/modules/[^/]+'   # must match the newest above
+uptime -s; ls -l --time-style=long-iso /boot/firmware/config.txt /boot/firmware/kernel_2712.img /boot/firmware/initramfs_2712
+grep -n '^initramfs' /boot/firmware/config.txt     # must print nothing — auto_initramfs=1 handles it
+uname -r; ls /lib/modules                          # running kernel, then installed ones
+lsinitramfs /boot/firmware/initramfs_2712 | grep -oE 'lib/modules/[^/]+' | sort -u   # must be the newest installed version of this board's flavour (-2712 or -v8)
+lsinitramfs /boot/firmware/initramfs_2712 | grep ahci                              # Pi 5 only: ahci.ko and libahci.ko must be listed
+cmp /boot/vmlinuz-<newest> /boot/firmware/kernel_2712.img && echo SAME             # the copy on the SD card is complete
+cmp /boot/initrd.img-<newest> /boot/firmware/initramfs_2712 && echo SAME
 ```
 
-Containers restart on their own after a reboot (`restart: unless-stopped`) — no `make up` needed. Reboot order: `dragospi5` (NAS) first, then `nuc`, then the two DNS Pis one at a time, verifying `dig @<pi-ip> example.com` answers before doing the next.
+If every boot file is older than the `uptime -s` time, nothing changed since the last successful boot. Name the board's file explicitly: a wildcard (`initramfs*`) only inspects the first match, and piping the listing into `grep -m1` prints a harmless `unmkinitramfs: ... failed` because it is cut short.
+
+If `uname -r` is older than the newest installed kernel, the reboot starts a kernel this Pi has never run. Before that reboot, copy the running pair onto the SD card under names the firmware ignores:
+
+```bash
+sudo cp /boot/vmlinuz-$(uname -r) /boot/firmware/backup-kernel_2712.img
+sudo cp /boot/initrd.img-$(uname -r) /boot/firmware/backup-initramfs_2712
+sync
+```
+
+If the Pi does not come back, put the SD card in another machine, rename `kernel_2712.img` and `initramfs_2712` out of the way, rename the two `backup-` files to those names, and boot. This fallback has not been exercised yet.
+
+Containers restart on their own after a reboot (`restart: unless-stopped`) — no `make up` needed. Afterwards run `make status` and `sudo iptables -S DOCKER-USER`: every container must be up and the firewall rule from [docs/security.md](docs/security.md#tailscale-only-web-uis-setup-per-node) must be listed. Reboot order: `dragospi5` (NAS) first, then `nuc`, then the two DNS Pis one at a time, verifying `dig @<pi-ip> example.com` answers before doing the next.
 
 > **Pi 5 (`dragospi5`) gotcha:** root is on an SSD behind the Penta SATA HAT, so the initramfs must carry the AHCI modules. A manual `initramfs <file> followkernel` line in `config.txt` pins a file that never gets regenerated; the next kernel upgrade then boots with stale modules and fails with `ALERT! PARTUUID=... does not exist`. Never add that line — `auto_initramfs=1` plus `update-initramfs` keeps `initramfs_2712` in sync (see step 6 in `scripts/setup-pi-nas.sh`). Recovery: mount the SD card on another machine, check `initramfs_2712` is as new as `kernel_2712.img`, and remove the manual line.
 
